@@ -1737,3 +1737,81 @@ public:
     }
 };
 ```
+
+### 翻转二叉树
+
+这道题使用递归做代码写的比价简单，**切记不要使用中序遍历**，前序和后序随便用。主要是注意递归的三部曲：
+
+1.确定递归函数的参数和返回值
+
+2.确定终止条件
+
+3.确定单层递归的逻辑
+
+这道题的思路就是按照顺序翻转子节点即可。
+
+后序遍历：
+
+```c++
+class Solution {
+public:
+    TreeNode* invertTree(TreeNode* root) {
+      if(root == NULL) return root;
+      invertTree(root->left);
+      invertTree(root->right); 
+      swap(root->left, root->right);    
+      return root;
+    }
+    };
+```
+
+前序遍历：
+
+```c++
+class Solution {
+public:
+    TreeNode* invertTree(TreeNode* root) {
+      if(root == NULL) return root;
+      swap(root->left, root->right);    
+      invertTree(root->left);
+      invertTree(root->right); 
+      return root;
+    }
+    };
+```
+
+### 对称二叉树
+
+对于二叉树是否对称，要比较的是根节点的左子树与右子树是不是相互翻转的，理解这一点就知道了**其实我们要比较的是两个树（这两个树是根节点的左右子树）**，所以在递归遍历的过程中，也是要同时遍历两棵树。
+
+这道题的关键是分开进行判断，先判断树**外侧的是否是相等**的，再判断树**内侧是否相等**，当外侧和内侧都相等时才是对称二叉树。
+
+**另一个关键的地方**在于对终止条件的判定，总共可以分为四种情况。
+
+<img src="learning_leecode.assets/20210203144624414.png" alt="101. 对称二叉树1" style="zoom:67%;" />
+
+```c++
+class Solution {
+public:
+    bool isSymmetric(TreeNode* root) {
+      if (root == NULL) return false;
+      return compare(root->left, root->right);
+    }
+    bool compare(TreeNode* left, TreeNode* right) {
+      // 这里需要着重讨论下终止条件！
+      // 1.左边为空右边不为空
+      // 2.左边不为空但右边为空
+      // 3.左边右边都为空，此时应该返回true，需要这个条件的原因是避免下面操作空指针。
+      // 4.左右都不为空但值不相等
+      if (left == NULL && right != NULL) return false;
+      else if (right == NULL && left != NULL) return false;
+      else if (right == NULL && left == NULL) return true; //这里需要写的原因是避免下面操作空指针
+      else if (left->val != right->val) return false;
+      bool outside = compare(left->left, right->right); //找两侧的节点，对于左节点就是找左边，右节点找右边
+      bool inside = compare(left->right, right->left); //找两侧的节点，对于右节点就是找左边，左节点找右边
+      bool same = outside && inside; //比较
+      return same;
+    }
+};
+```
+
