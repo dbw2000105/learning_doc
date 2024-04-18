@@ -1,0 +1,197 @@
+{
+    "editor.accessibilityPageSize": 18,
+    "editor.fontSize": 20,
+    "workbench.iconTheme": "vscode-icons",
+    // "editor.fontFamily": "Consolas,monospace",
+    // settings.json
+    "terminal.integrated.inheritEnv": false,
+    "terminal.integrated.gpuAcceleration": "on", // 集成终端使用GPU加速
+    //"files.autoSave": "afterDelay",
+    "debug.console.fontSize": 18,
+    "terminal.integrated.fontSize": 15,
+    "terminal.integrated.lineHeight": 1.5,
+    "vsicons.dontShowNewVersionMessage": true,
+    /*editor*/
+    "editor.cursorBlinking": "smooth", //使编辑器光标的闪烁平滑，有呼吸感
+    "editor.formatOnPaste": false, //在粘贴时格式化代码
+    "editor.formatOnType": true, //敲完一行代码自动格式化
+    "editor.suggestOnTriggerCharacters": true, // 控制在键入触发字符后是否自动显示建议
+    "editor.suggestSelection": "first", //始终预先选择第一个建议
+    "editor.quickSuggestionsDelay": 0, // 控制显示快速建议前的等待时间（毫秒）
+    "editor.inlineSuggest.enabled": true, // 在编辑器中自动显示内联建议
+    "editor.parameterHints.enabled": true, // 是否在输入时显示含有参数文档和类型信息的小面板
+    // 控制是否在键入代码时自动显示建议
+    "editor.quickSuggestions": {
+      "comments": false, // 键入注释时不允许
+      "other": true, // 键入其他时允许
+      "strings": false // 键入字符串时不允许
+    },
+    // 控制是否在键入代码时自动显示建议
+    "editor.smoothScrolling": true, //使编辑器滚动变平滑
+    "editor.tabCompletion": "on", //启用Tab补全
+    "editor.fontFamily": "'MonoLisa','思源黑体'",
+    "editor.fontLigatures": true,
+    "editor.tabSize": 2,
+    // "editor.fontFamily": "'Jetbrains Mono', '思源黑体'",//字体设置，个人喜欢Jetbrains Mono作英文字体，思源黑体作中文字体
+    // "editor.fontLigatures": true, //启用字体连字
+    "editor.detectIndentation": false, //不基于文件内容选择缩进用制表符还是空格
+    "editor.insertSpaces": true, //敲下Tab键时插入4个空格而不是制表符
+    "editor.copyWithSyntaxHighlighting": false, //复制代码时复制纯文本而不是连语法高亮都复制了
+    "editor.suggest.snippetsPreventQuickSuggestions": false, //这个开不开效果好像都一样，据说是因为一个bug，建议关掉
+    "editor.stickyTabStops": true, //在缩进上移动光标时四个空格一组来移动，就仿佛它们是制表符(\t)一样
+    "editor.wordBasedSuggestions": false, //关闭基于文件中单词来联想的功能（语言自带的联想就够了，开了这个会导致用vscode写MarkDown时的中文引号异常联想）
+    "editor.linkedEditing": true, //html标签自动重命名（喜大普奔！终于不需要Auto Rename Tag插件了！）
+    "editor.wordWrap": "on", //在文件内容溢出vscode显示区域时自动折行
+    "editor.cursorSmoothCaretAnimation": "on", //让光标移动、插入变得平滑
+    "editor.renderControlCharacters": true, //编辑器中显示不可见的控制字符
+    "editor.renderWhitespace": "none", //除了两个单词之间用于分隔单词的一个空格，以一个小灰点的样子使空格可见
+    // 添加下面的代码
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "name": "Comment",
+                "scope": [
+                    "comment",
+                    "comment.block",
+                    "comment.block.documentation",
+                    "comment.line",
+                    "comment.line.double-slash",
+                    "punctuation.definition.comment",
+                ],
+                "settings": {
+                    // "foreground": "#9de95e", //设置颜色
+                    "fontStyle": "bold", //加粗
+                    /*
+                    "fontStyle": "italic", //斜体 
+                    "fontStyle": "italic underline", //斜体下划线 
+                    "fontStyle": "italic bold underline", //斜体粗体下划线
+                    */
+                }
+            },
+        ]
+    },
+    /*terminal*/
+    "terminal.integrated.defaultProfile.windows": "Command Prompt", //将终端设为cmd，个人比较喜欢cmd作为终端
+    "terminal.integrated.cursorBlinking": true, //终端光标闪烁
+    "terminal.integrated.rightClickBehavior": "default", //在终端中右键时显示菜单而不是粘贴（个人喜好）
+    /*files*/
+    "files.autoGuessEncoding": true, //让VScode自动猜源代码文件的编码格式
+    "files.autoSave": "onFocusChange", //在编辑器失去焦点时自动保存，这使自动保存近乎达到“无感知”的体验
+    "files.exclude": { //隐藏一些碍眼的文件夹
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/tmp": true,
+        "**/node_modules": true,
+        "**/bower_components": true
+    },
+    "files.watcherExclude": { //不索引一些不必要索引的大文件夹以减少内存和CPU消耗
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/**": true,
+        "**/tmp/**": true,
+        "**/bower_components/**": true,
+        "**/dist/**": true
+    },
+    /*workbench*/
+    "workbench.list.smoothScrolling": true, //使文件列表滚动变平滑
+    "workbench.editor.enablePreview": false, //打开文件时不是“预览”模式，即在编辑一个文件时打开编辑另一个文件不会覆盖当前编辑的文件而是新建一个标签页
+    "workbench.editor.wrapTabs": true, //编辑器标签页在空间不足时以多行显示
+    "workbench.editor.untitled.hint": "hidden", //隐藏新建无标题文件时的“选择语言？”提示（个人喜好，可以删掉此行然后Ctrl+N打开无标题新文件看看不hidden的效果）
+    /*explorer*/
+    "explorer.confirmDelete": true, //删除文件时不弹出确认弹窗（因为很烦）
+    "explorer.confirmDragAndDrop": false, //往左边文件资源管理器拖动东西来移动/复制时不显示确认窗口（因为很烦）
+    /*search*/
+    "search.followSymlinks": false, //据说可以减少vscode的CPU和内存占用
+    // search
+    "search.showLineNumbers": true, // 显示搜索结果所在行号
+    "search.smartCase": true, // 当搜索词为小写时，则不区分大小写进行搜索，否则区分大小写
+     // output
+     "output.smartScroll.enabled": true, // 输出窗口智能滚动：点击时锁定，点击最后一行时解锁
+    // 配置在搜索中排除的文件和文件夹的glob模式
+    "search.exclude": {
+        // "someFolder/": true,
+        // "somefile": true
+    },
+    /*window*/
+    "window.menuBarVisibility": "visible", //在全屏模式下仍然显示窗口顶部菜单（没有菜单很难受）
+    "window.dialogStyle": "custom", //使用更具有VSCode的UI风格的弹窗提示（更美观）
+    /*debug*/
+    "debug.internalConsoleOptions": "openOnSessionStart", //每次调试都打开调试控制台，方便调试
+    "debug.showBreakpointsInOverviewRuler": true, //在滚动条标尺上显示断点的位置，便于查找断点的位置
+    "debug.toolBarLocation": "docked", //固定调试时工具条的位置，防止遮挡代码内容（个人喜好）
+    "debug.saveBeforeStart": "nonUntitledEditorsInActiveGroup", //在启动调试会话前保存除了无标题文档以外的文档（毕竟你创建了无标题文档就说明你根本没有想保存它的意思（至少我是这样的。））
+    "debug.onTaskErrors": "showErrors", //预启动任务出错后显示错误，并不启动调试
+    /*html*/
+    "html.format.indentHandlebars": true,
+    "cmake.configureOnOpen": true,
+    "json.schemas": [],
+    "editor.mouseWheelZoom": true,
+    // "[python]": {
+    //     "editor.defaultFormatter": "ms-python.autopep8"
+    // },
+    // "python.formatting.provider": "none",
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    }, // 按住ctrl可以设置代码的字体大小
+    
+    "C_Cpp.autocomplete": "disabled",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.default.intelliSenseMode": "gcc-x64",
+    "C_Cpp.default.cppStandard": "c++14",
+    "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
+    "editor.snippetSuggestions": "top",
+    //errorLens settings
+    "errorLens.statusBarIconsEnabled": true,
+    "errorLens.gutterIconsEnabled": true,
+    "errorLens.enabledDiagnosticLevels": [
+        "error",
+        "hint",
+        "warning"
+    ], //在行号的左边显示小错误图标（个人喜好）
+
+    //clangd settings
+    "clangd.arguments": [
+        "--background-index",// 后台分析并保存索引文件
+        "--compile-commands-dir=build",  //compile_command.json相对路径，cmake默认生成在build，自行配置
+        "-j=12",
+        "--all-scopes-completion",// 全局补全(补全建议会给出在当前作用域不可见的索引,插入后自动补充作用域标识符),例如在main()中直接写cout,即使没有`#include <iostream>`,也会给出`std::cout`的建议,配合"--header-insertion=iwyu",还可自动插入缺失的头文件
+        "--completion-style=detailed",
+        "--header-insertion=iwyu",
+        "--pch-storage=memory",
+        "--completion-parse=auto", // 当 clangd 准备就绪时，用它来分析建议
+        "--function-arg-placeholders=true", // 补全函数时，将会给参数提供占位符，键入后按 Tab 可以切换到下一占位符，乃至函数末
+        "--cross-file-rename",
+        "--enable-config",
+        "--fallback-style=WebKit",
+        "--pretty",
+        "--clang-tidy",
+        // "--clang-tidy-checks=performance-*,bugprone-*",
+        "--query-driver=/usr/bin/g++*"
+    ],
+    "[cpp]": {
+        // 在cpp文件中，编辑器在保存的时候进行格式化
+        "editor.formatOnSave": false,
+        // 在cpp文件中，编辑器在打字的时候进行格式化
+        "editor.formatOnType": false,
+        // 在cpp文件中，编辑器在粘贴的时候进行格式化
+        "editor.formatOnPaste": false,
+        // 在cpp文件中，编辑器的默认格式化器为 "xaver.clang-format"
+        // 这里的"xaver.clang-format"就是我们安装的clang-format
+        // vscode插件
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "clangd.path": "/usr/bin/clangd-18",
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "editor.suggest.insertMode": "replace",
+    "workbench.editor.empty.hint": "hidden",
+    "workbench.colorTheme": "Gruvbox Material Dark",
+    "todo-tree.general.revealBehaviour": "leave focus in tree"
+    
+    
+}

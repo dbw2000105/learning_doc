@@ -1,0 +1,8 @@
+# [ROS]message filters学习
+
+## 简要介绍:message filters是干什么用的？
+
+message_filters用于对齐多种传感信息的[时间戳](https://so.csdn.net/so/search?q=时间戳&spm=1001.2101.3001.7020)，对齐时间戳有两种方式：
+
+* 一种是时间戳完全对齐 ：**ExactTime Policy** ;
+* 另一种是时间戳相近：**ApproximateTime Policy**
