@@ -1,3 +1,15 @@
+难点题目
+
+1.滑窗
+
+2.三数之和
+
+3.KMP
+
+4.滑动窗口最大值(栈与队列)
+
+5.前 K 个高频元素
+
 # 算法积累
 
 ## 数组
@@ -846,4 +858,882 @@ while(n){
 if(set.find(sum) != set.end()){
     return false;
 }
+```
+
+## 哈希表
+
+### 两数之和
+
+首先我再强调一下 **什么时候使用哈希法**，当我们需要查询一个元素是否出现过，或者一个元素是否在集合里的时候，**就要第一时间想到哈希法**。
+
+哈希法常用的数据结构有三种：数组，set和map。对于本题来说，我们不仅要知道元素有没有遍历过，还要知道这个元素对应的下标，**需要使用 key value结构来存放，key来存元素，value来存下标，那么使用map正合适**。
+
+关于数组和set做哈希法的局限：
+
+- 数组的大小是受限制的，而且如果元素很少，而哈希值太大会造成**内存空间的浪费**。
+- set是一个集合，里面放的元素只能是一个key，而两数之和这道题目，不仅要判断y是否存在而且还要记录y的下标位置，因为要返回x 和 y的下标。所以set 也不能用。
+
+那么判断**元素是否出现**，这个元素就要作为key，所以数组中的元素作为key，有key对应的就是value，value用来存下标。
+
+在遍历数组的时候，**只需要向map去查询是否有和目前遍历元素匹配的数值**，如果有，就找到的匹配对，如果没有，就把目前遍历的元素放进map中，因为map存放的就是我们访问过的元素。
+
+### 四数相加II
+
+这道题目看起来有些绕，说白了就是在四个数组中取数，每个数组取一个数，统计四个取出的数字相加等于0的个数。这道题不需要考虑有重复的四个元素相加等于0的情况，相对于**18. 四数之和，题目15.三数之和**要简单一些。
+
+**本题解题步骤：**
+
+1. 首先定义 一个unordered_map，key放a和b两数之和，value 放a和b两数之和出现的次数。
+2. 遍历大A和大B数组，统计两个数组元素之和，和出现的次数，放到map中。
+3. 定义int变量count，用来统计 a+b+c+d = 0 出现的次数。
+4. 在遍历大C和大D数组，找到如果 0-(c+d) 在map中出现过的话，就用count把map中key对应的value也就是出现次数统计出来。
+5. 最后返回统计值 count 就可以了
+
+==note:== 这道题的关键思路在于**将四个数组分成两组**，首先统计A和B数组中所有的两数和，然后在遍历C和D数组的时候统计如果有0-(c+d)出现，那么count就增加map中0-(c+d)出现的次数。
+
+```c++
+class Solution {
+public:
+    int fourSumCount(vector<int>& A, vector<int>& B, vector<int>& C, vector<int>& D) {
+        unordered_map<int, int> umap; //key:a+b的数值，value:a+b数值出现的次数
+        // 遍历大A和大B数组，统计两个数组元素之和，和出现的次数，放到map中
+        for (int a : A) {
+            for (int b : B) {
+                umap[a + b]++;
+            }
+        }
+        int count = 0; // 统计a+b+c+d = 0 出现的次数
+        // 在遍历大C和大D数组，找到如果 0-(c+d) 在map中出现过的话，就把map中key对应的value也就是出现次数统计出来。
+        for (int c : C) {
+            for (int d : D) {
+                if (umap.find(0 - (c + d)) != umap.end()) {
+                    count += umap[0 - (c + d)];
+                }
+            }
+        }
+        return count;
+    }
+}
+```
+
+###赎金信
+
+==note:== 涉及到字母的题都可以优先考虑数组，因为字母只有26个，而且使用数组十分节省内存。
+
+本题只有两个需要注意的点：
+
+- 第一点“为了不暴露赎金信字迹，要从杂志上搜索各个需要的字母，组成单词来表达意思” 这里*说明杂志里面的字母不可重复使用。*
+- 第二点 “你可以假设两个字符串均只含有小写字母。” *说明只有小写字母*，这一点很重要
+
+```c++
+class Solution {
+public:
+    bool canConstruct(string ransomNote, string magazine) {
+        int num_list[26] = {0};
+        for(auto &i : magazine){
+            num_list[i - 'a'] ++;
+        }
+        
+        int count = 0;
+        for(auto &i : ransomNote){
+            if(num_list[i - 'a'] != 0){
+                num_list[i - 'a'] --;
+                count ++;
+            }
+        }
+        if(count == ransomNote.size()){
+            return true;
+        }
+        return false;
+    }
+};
+```
+
+### [三数之和(较难)](https://leetcode.cn/problems/3sum/)
+
+==三数之和的难点在于如何去重。==
+
+### 四数之和
+
+四数之和和三数之和的思路一致，需要额外添加一层for循环。
+
+## 字符串
+
+###  反转字符串
+
+这道题是典型的使用双指针进行解题。我们定义一个头指针和一个尾指针，让两个指针同时向中间移动。
+
+![344.反转字符串](learning_leecode.assets/344.反转字符串.gif)
+
+```c++
+void reverseString(vector<char>& s) {
+    for (int i = 0, j = s.size() - 1; i < s.size()/2; i++, j--) {
+        swap(s[i],s[j]);
+    }
+}
+```
+
+### 反转字符串II
+
+这道题相当于对反转字符串添加了一系列规则，从字符串开头算起，每计数至 `2k` 个字符，就反转这 `2k` 字符中的前 `k` 个字符。在做翻转操作的时候，可以直接使用reverse库函数，要注意，reverse的区间是**左闭右开**的。
+
+```c++
+class Solution {
+public:
+    string reverseStr(string s, int k) {
+        for(int i = 0; i < s.size(); i += (2 * k)){
+            if(i + k <= s.size()){ //这里需要判断，i+k不能大于字符串的长度
+                reverse(s.begin() + i, s.begin() + i + k); //对i到i+k的数组进行翻转
+                continue;
+            }
+            reverse(s.begin() + i, s.end());
+        }
+        return s;
+    }
+};
+```
+
+### 替换数字
+
+这道题目的思路主要是将字符串先扩增到指定大小，然后从后向前进行操作，过程如下图所示。
+
+![img](learning_leecode.assets/20231030173058.png)
+
+有同学问了，为什么要从后向前填充，从前向后填充不行么？
+
+从前向后填充就是O(n^2)的算法了，因为每次添加元素都要将添加元素之后的所有元素整体向后移动。
+
+**其实很多数组填充类的问题，其做法都是先预先给数组扩容带填充后的大小，然后在从后向前进行操作。**
+
+这么做有两个好处：
+
+1. 不用申请新数组。
+2. 从后向前填充元素，避免了从前向后填充元素时，每次添加元素都要将添加元素之后的所有元素向后移动的问题。
+
+```c++
+#include<iostream>
+using namespace std;
+int main() {
+    string s;
+    while (cin >> s) {
+        int count = 0; // 统计数字的个数
+        int sOldSize = s.size();
+        for (int i = 0; i < s.size(); i++) {
+            if (s[i] >= '0' && s[i] <= '9') {
+                count++;
+            }
+        }
+        // 扩充字符串s的大小，也就是每个空格替换成"number"之后的大小
+        s.resize(s.size() + count * 5);
+        int sNewSize = s.size();
+        // 从后先前将空格替换为"number"
+        for (int i = sNewSize - 1, j = sOldSize - 1; j < i; i--, j--) {
+            if (s[j] > '9' || s[j] < '0') {
+                s[i] = s[j];
+            } else {
+                s[i] = 'r';
+                s[i - 1] = 'e';
+                s[i - 2] = 'b';
+                s[i - 3] = 'm';
+                s[i - 4] = 'u';
+                s[i - 5] = 'n';
+                i -= 5;
+            }
+        }
+        cout << s << endl;
+    }
+}
+```
+
+### 反转字符串中的单词
+
+这题是经典的双指针解法，我们定义一个快指针和一个慢指针，快指针用于搜索元素，而慢指针用于更新元素的位置。
+
+这道题可以分成两个步骤进行，首先第一步用双指针删除多余的空格，然后再反转字符串中的顺序。因此这里我们写了两个函数。removeExtraSpaces和reverseWords。
+
+```c++
+class Solution {
+public:
+    void reverse(string& s, int start, int end){ //翻转，区间写法：左闭右闭 []
+        for (int i = start, j = end; i < j; i++, j--) {
+            swap(s[i], s[j]);
+        }
+    }
+
+    void removeExtraSpaces(string& s) {//去除所有空格并在相邻单词之间添加空格, 快慢指针。
+        int slow = 0;   //整体思想参考https://programmercarl.com/0027.移除元素.html
+        for (int i = 0; i < s.size(); ++i) { //
+            if (s[i] != ' ') { //遇到非空格就处理，即删除所有空格。
+                if (slow != 0) s[slow++] = ' '; //手动控制空格，给单词之间添加空格。slow != 0说明不是第一个单词，需要在单词前添加空格。
+                while (i < s.size() && s[i] != ' ') { //补上该单词，遇到空格说明单词结束。
+                    s[slow++] = s[i++];
+                }
+            }
+        }
+        s.resize(slow); //slow的大小即为去除多余空格后的大小。
+    }
+
+    string reverseWords(string s) {
+        removeExtraSpaces(s); //去除多余空格，保证单词之间之只有一个空格，且字符串首尾没空格。
+        reverse(s, 0, s.size() - 1); //将整个字符串反转
+        int start = 0; //removeExtraSpaces后保证第一个单词的开始下标一定是0。
+        for (int i = 0; i <= s.size(); ++i) {
+            if (i == s.size() || s[i] == ' ') { //到达空格或者串尾，说明一个单词结束。进行翻转。
+                reverse(s, start, i - 1); //翻转，注意是左闭右闭 []的翻转。
+                start = i + 1; //更新下一个单词的开始下标start
+            }
+        }
+        return s;
+    }
+};
+```
+
+对于removeExtraSpaces函数，有一些注意的点：
+
++ 首先需要单独一个逻辑判断字符串的第一个是不是空格：
+
+```c++
+if (slow != 0) s[slow++] = ' '; //手动控制空格，给单词之间添加空格。slow != 0说明不是第一个单词，需要在单词前添加空格。
+```
+
++ 之后对每个单词进行操作：
+
+```c++
+while (i < s.size() && s[i] != ' ') { //补上该单词，遇到空格说明单词结束。
+    s[slow++] = s[i++];
+}
+```
+
+对于reverseWords函数，有一些注意的点：
+
++ 反转单词采用的是整体反转+局部反转的方式
+
+```c++
+removeExtraSpaces(s); //去除多余空格，保证单词之间之只有一个空格，且字符串首尾没空格。
+reverse(s, 0, s.size() - 1); //将整个字符串反转
+int start = 0; //removeExtraSpaces后保证第一个单词的开始下标一定是0。
+for (int i = 0; i <= s.size(); ++i) {
+    if (i == s.size() || s[i] == ' ') { //到达空格或者串尾，说明一个单词结束。进行翻转。
+        reverse(s, start, i - 1); //翻转，注意是左闭右闭 []的翻转。
+        start = i + 1; //更新下一个单词的开始下标start
+    }
+}
+```
+
+### 右旋字符串
+
+右旋字符串的思路比较巧妙，延续了前面反转单词**整体反转+局部反转**的思想，先将整个字符串反转过来，然后将分过段的两个子段再分别翻转，最终实现目的。
+
+![img](learning_leecode.assets/20231106171557.png)
+
+![img](learning_leecode.assets/20231106172058.png)
+
+```c++
+// 版本一
+#include<iostream>
+#include<algorithm>
+using namespace std;
+int main() {
+    int n;
+    string s;
+    cin >> n;
+    cin >> s;
+    int len = s.size(); //获取长度
+
+    reverse(s.begin(), s.end()); // 整体反转
+    reverse(s.begin(), s.begin() + n); // 先反转前一段，长度n
+    reverse(s.begin() + n, s.end()); // 再反转后一段
+
+    cout << s << endl;
+
+} 
+```
+
+### 实现 strStr() (KMP算法)
+
+**KMP算法主要用于解决字符串的匹配问题。**
+
+kmp算法关键在于：在当前对文本串和模式串检索的过程中，若出现了不匹配，**如何充分利用已经匹配的部分**。 
+
+匹配到不正确的地方以前的子串跟上面的子串相等所以==下面的子串的最长前缀肯定跟上面最长子串的后缀有匹配==。
+
+前后缀的定义：
+
+前缀：包含首字母，不包含尾字母的**所有子串**。
+
+后缀：包含尾字母，不包含首字母的**所有子串**。
+
+例如一个字符串：aabaaf
+
+前缀：a aa aab aabaa
+
+后缀：f af aaf baaf abaaf
+
+**我们需要求最长相等的前后缀的长度，构成next前缀表**
+
+KMP算法的核心是计算出字符串的next数组，然后在匹配的过程中根据next数组指示我们应该跳过几个元素。
+
+前缀表next的作用是什么：**前缀表是用来回退的，它记录了模式串与主串(文本串)不匹配的时候，模式串应该从哪里开始重新匹配。**
+
+next数组的求法：
+
++ 初始化：
+
+初始化需要定义两个指针i和j，==其中j指向前缀末尾的位置，i指向后缀末尾的位置。==
+
++ 前后缀不相同
+
+因为j初始化为0，那么i就从1开始，进行s[i] 与 s[j+1]的比较。所以遍历模式串s的循环下标i 要从 1开始，代码如下：
+
+```c++
+for (int i = 1; i < s.size(); i++) {
+```
+
+如果 s[i] 与 s[j+1]不相同，也就是遇到 前后缀末尾不相同的情况，就要向前回退。
+
+怎么回退呢？
+
+next[j]就是记录着j（包括j）之前的子串的相同前后缀的长度。
+
+那么 s[i] 与 s[j+1] 不相同，就要找 j+1前一个元素在next数组里的值（就是next[j]）。
+
+所以，处理前后缀不相同的情况代码如下：
+
+```c++
+while (j >= 0 && s[i] != s[j + 1]) { // 前后缀不相同了
+    j = next[j]; // 向前回退
+}
+```
+
++ 前后缀相同
+
+如果 s[i] 与 s[j + 1] 相同，那么就同时向后移动i 和j 说明找到了相同的前后缀，同时还要将j（前缀的长度）赋给next[i], 因为next[i]要记录相同前后缀的长度。
+
+```c++
+if (s[i] == s[j + 1]) { // 找到相同的前后缀
+    j++;
+}
+next[i] = j;
+```
+
+最后整体构建next数组的函数代码如下：
+
+```c++
+void getNext(int* next, const string& s){
+    int j = 0;
+    next[0] = j;
+    for(int i = 1; i < s.size(); i++) { // 注意i从1开始
+        while (j >= 0 && s[i] != s[j + 1]) { // 前后缀不相同了
+            j = next[j]; // 向前回退
+        }
+        if (s[i] == s[j + 1]) { // 找到相同的前后缀
+            j++;
+        }
+        next[i] = j; // 将j（前缀的长度）赋给next[i]
+    }
+}
+```
+
+最后用next数组来做匹配
+
+```c++
+int j = 0; // 因为next数组里记录的起始位置为0
+for (int i = 0; i < s.size(); i++) { // 注意i就从0开始
+    while(j > 0 && s[i] != t[j]) { // 不匹配
+        j = next[j]; // j 寻找之前匹配的位置
+    }
+    if (s[i] == t[j]) { // 匹配，j和i同时向后移动
+        j++; // i的增加在for循环里
+    }
+    if (j == t.size()  ) { // 文本串s里出现了模式串t
+        return (i - t.size() + 1);
+    }
+```
+
+计算next数组的过程其实和动态规划的过程类似，从第一个字符开始遍历，求出当前子串的最长相等前后缀，再逐个填写到next数组中。
+
+问：为什么使用前缀表可以告诉我们匹配失败之后跳到哪里重新匹配？
+
+**下标5之前这部分的字符串（也就是字符串aabaa）的最长相等的前缀 和 后缀字符串是 子字符串aa ，因为找到了最长相等的前缀和后缀，匹配失败的位置是后缀子串的后面，那么我们找到与其相同的前缀的后面重新匹配就可以了。**
+
+提供一篇讲的比较好的知乎文章：https://www.zhihu.com/question/21923021/answer/281346746
+
+完整代码：
+
+```c++
+`    void getNext(int* next, const string& s) {
+        int j = 0; //初始化
+        next[0] = 0;
+        for(int i = 1; i < s.size(); i++) {
+            //如果s[i] 不等于 s[j]的情况
+            while (j > 0 && s[i] != s[j]) { // j要保证大于0，因为下面有取j-1作为数组下标的操作
+                j = next[j - 1]; // 注意这里，是要找前一位的对应的回退位置了
+            }
+            //如果s[i]等于s[j]的情况
+            if (s[i] == s[j]) {
+                j++;
+            }
+            next[i] = j;
+        }
+    }
+    int strStr(string haystack, string needle) {
+        if (needle.size() == 0) {
+            return 0;
+        }
+        int next[needle.size()];
+        getNext(next, needle);
+        int j = 0; //next数组里记录的起始位置为0
+        for(int i = 0; i< haystack.size(); i++){
+            //不匹配的情况
+            while(j > 0 && haystack[i] != needle[j]){
+                j = next[j - 1]; //当不匹配的时候，要选择next数组上一个位置的值
+            }
+            //匹配，则i和j同时加一
+            if(haystack[i] == needle[j]){
+                j++;
+            }
+
+            if(j == needle.size()){
+                return (i - needle.size() + 1);
+            }
+        }
+        return -1;
+    }
+```
+
+## 栈与队列
+
+### 基础知识扫盲
+
+问题：
+
+1.C++中stack 是容器么？
+
+答：不是容器，而是容器适配器。
+
+2.我们使用的stack是属于哪个版本的STL？
+
+答： SGI STL。
+
+3.我们使用的STL中stack是如何实现的？
+
+答：栈是以底层容器完成其所有的工作，对外提供统一的接口，底层容器是可插拔的（也就是说我们可以控制使用哪种容器来实现栈的功能）。默认是以deque为缺省情况下栈的底层结构。
+
+4.stack 提供迭代器来遍历stack空间么？
+
+答：栈不提供走访功能，也不提供迭代器。
+
++ 栈
+
+**栈先进后出**。栈提供push 和 pop 等等接口，所有元素**必须符合先进后出规则**，所以==栈不提供走访功能，也不提供迭代器(iterator)==。 不像是set 或者map 提供迭代器iterator来遍历所有元素。不像是set 或者map 提供迭代器iterator来遍历所有元素。
+
+栈是以底层容器完成其所有的工作，对外提供统一的接口，底层容器是可插拔的（也就是说我们可以控制使用哪种容器来实现栈的功能）。所以STL中**栈往往不被归类为容器**，而被归类为container adapter（容器适配器）。
+
+栈的内部结构：
+
+![栈与队列理论3](learning_leecode.assets/20210104235459376.png)
+
+我们常用的SGI STL，如果没有指定底层实现的话，默认是以**deque**为缺省情况下栈的底层结构。
+
++ 队列
+
+deque是一个双向队列，只要封住一段，只开通另一端就可以实现栈的逻辑了。队列中先进先出的数据结构，同样不允许有遍历行为，不提供迭代器, **SGI STL中队列一样是以deque为缺省情况下的底部结构。**所以STL 队列也不被归类为容器，而被归类为container adapter（ 容器适配器）。
+
+### 用栈实现队列
+
+
+
+### 用队列实现栈
+
+### 有效的括号
+
+由于栈结构的特殊性，非常适合做**对称匹配类**的题目。
+
+不匹配的情况只有三种情况：
+
+1.字符串里左方向的括号多余了
+
+2.括号没有多余，但是 括号的类型没有匹配上。
+
+3.字符串里右方向的括号多余了，所以不匹配。
+
+在代码中我们只需要解决上述的三种匹配错误的情况就可以了。
+
++ 第一种情况：已经遍历完了字符串，但是栈不为空，说明有相应的左括号没有右括号来匹配，所以return false
+
++ 第二种情况：遍历字符串匹配的过程中，发现栈里没有要匹配的字符。所以return false
+
++ 第三种情况：遍历字符串匹配的过程中，栈已经为空了，没有匹配的字符了，说明右括号没有找到对应的左括号return false
+
+那么什么时候说明左括号和右括号全都匹配了呢，就是字符串遍历完之后，栈是空的，就说明全都匹配了。
+
+```c++
+class Solution {
+public:
+    bool isValid(string s) {
+        stack<int> sl;
+        if(s.size() % 2 != 0) return false;
+        for(int i = 0; i < s.size(); i++){
+            if(s[i] == '[') sl.push(']');
+            else if(s[i] == '{') sl.push('}');
+            else if(s[i] == '(') sl.push(')');
+            else if(sl.empty() || sl.top() != s[i]) return false;  //这一行是整个代码中最难理解的
+            //这里需要先判断是否为空，再判断是否匹配。
+            else sl.pop();
+        }
+        if(!sl.empty()){
+            return false;
+        }
+        return true;
+    }
+};
+```
+
+代码的第十行是相对最难理解的，判断字符是否匹配的关键是：sl.top() != s[i]；当前面三个if都不满足时，说明我们遇到了右边的括号，这时候我们查询栈中最外面的括号是否是匹配的，如果不匹配则直接返回false
+
+### 删除字符串中的所有相邻重复项
+
+这题也是典型的用栈去解决的问题，但是为了减少最后一步将栈转换成字符串，==这题我们可以用字符串去模拟栈！==
+
+我们定义一个字符串，当我们遍历的字符串的元素和我们定义的字符串最后一个元素不相等时，我们就将这个遍历的字符串元素加入到我们定义的字符串的最后面
+
+```c++
+class Solution {
+public:
+    string removeDuplicates(string s) {
+        string result;
+        for(auto &i : s){
+            if(result.empty() || result.back() != i) result.push_back(i);
+            else result.pop_back();
+        }
+        return result;
+    }
+};
+```
+
+我们也可以用经典的stack实现，但是在将stack转换为string时有坑！
+
+```c++
+class Solution {
+public:
+    string removeDuplicates(string s) {
+        stack<char> result;
+        for(int i = 0; i < s.size(); i++){
+            if(result.empty() || result.top() != s[i]) result.push(s[i]);
+            else result.pop();
+        }
+        string aa;
+        int num  = result.size(); 
+        for(int i = 0; i < num; i++){ // 坑在这里for循环遍历的终止条件
+            aa.push_back(result.top());
+            result.pop();
+        }
+        reverse(aa.begin(), aa.end());
+        return aa;
+    }
+};
+```
+
+因为栈没有迭代器，不能通过[]访问其元素，因此，只能执行top()，push()，pop()等操作，每当我们pop出一个新元素时，**栈内的长度就发生了变化**，此时如果for循环里面我们写入的是i < result.size() 就会出现意想不到的错误！
+
+### 逆波兰表达式求值
+
+逆波兰表达式实际上是后缀表达式，他是计算机处理多项式运算的一种十分方便的表达式类型。逆波兰表达式实际上是二叉树的后续遍历。比如(1 + 2) × (3 + 4)我们转换成逆波兰表达式就成：12+34×，也就是从二叉树的叶子节点向上不断地遍历。
+
+这道题的思路是分为两种情况处理：
+
+1.遇到运算符：
+
+从栈中取出两个元素，进行相应的运算。
+
+2.遇到数字：
+
+加入到栈中。
+
+```c++
+class Solution {
+public:
+    int evalRPN(vector<string>& tokens) {
+        stack<long long> st;
+        for(int i = 0; i < tokens.size(); i++){
+            if(tokens[i] == "+" || tokens[i] == "-" || tokens[i] == "*" || tokens[i] == "/"){
+                long long num1 = st.top(); st.pop();
+                long long num2 = st.top(); st.pop();
+            if(tokens[i] == "+") st.push(num2 + num1); //这道题的坑是对于num1和num2的运算顺序
+            if(tokens[i] == "-") st.push(num2 - num1);
+            if(tokens[i] == "*") st.push(num2 * num1);
+            if(tokens[i] == "/") st.push(num2 / num1);
+            }else st.push(stoll(tokens[i]));
+        }
+        int result = st.top();
+        st.pop();
+        return result;
+    }
+};
+```
+
+这道题的坑是对于num1和num2的运算顺序，因为stack的存储顺序是后进先出，因此，num1存储的是后面的那个数，而num2存储的才是前面那个数。比如题目给出波兰表达式："12+" 实际上对应于"1+2"，那么num1是2，num2是1
+
+### 滑动窗口最大值
+
+
+
+### 前 K 个高频元素（优先级队列，大顶堆，小顶堆）
+
+==note：对元素出现的频率进行排序，用map这种数据结构更合适！==
+
+## 二叉树
+
+### 理论基础
+
++ 二叉树的种类：满二叉树，完全二叉树，二叉搜索树，  平衡二叉搜索树。
+
+**满二叉树**：满二叉树：如果一棵二叉树只有度为0的结点和度为2的结点，并且度为0的结点在同一层上，则这棵二叉树为满二叉树。
+
+<img src="learning_leecode.assets/20200806185805576.png" alt="img" style="zoom:50%;" />
+
+**完全二叉树**：除了最底层节点可能没填满外，其余每层节点数都达到最大值，并且最下面一层的节点都集中在该层最左边的若干位置。(**堆就是一棵完全二叉树**)
+
+<img src="learning_leecode.assets/20200920221638903.png" alt="img" style="zoom:50%;" />
+
+**二叉搜索树**：
+
+<img src="learning_leecode.assets/20200806190304693.png" alt="img" style="zoom:50%;" />
+
+若它的左子树不空，则左子树上所有结点的值均小于它的根结点的值；
+
+若它的右子树不空，则右子树上所有结点的值均大于它的根结点的值；
+
+它的左、右子树也分别为二叉排序树
+
+**平衡二叉搜索树**：
+
+<img src="learning_leecode.assets/20200806190511967.png" alt="img" style="zoom:50%;" />
+
+它是一棵空树或它的左右两个子树的高度差的绝对值不超过1，并且左右两个子树都是一棵平衡二叉树。
+
+最后一棵 不是平衡二叉树，因为它的左右两个子树的高度差的绝对值超过了1。
+
+**C++中map、set、multimap，multiset的底层实现都是平衡二叉搜索树**，所以map、set的增删操作时间时间复杂度是logn
+
++ 二叉树的存储方式
+
+**二叉树可以链式存储，也可以顺序存储。**
+
+那么链式存储方式就用**指针**， 顺序存储的方式就是用**数组**。
+
+链式存储方式：
+
+<img src="learning_leecode.assets/2020092019554618.png" alt="img" style="zoom:50%;" />
+
+顺序存储方式：
+
+<img src="learning_leecode.assets/20200920200429452.png" alt="img" style="zoom:50%;" />
+
++ 二叉树的遍历方式
+
+主要两种遍历方式：
+
+1. 深度优先遍历：先往深走，遇到叶子节点再往回走。
+
+   前中后序遍历 (递归法，迭代法)
+
+   - 前序遍历：中左右
+   - 中序遍历：左中右
+   - 后序遍历：左右中 
+
+<img src="learning_leecode.assets/20200806191109896.png" alt="img" style="zoom:50%;" />
+
+
+
+1. 广度优先遍历：一层一层的去遍历。
+
+​	层级遍历(迭代法)
+
+最后再说一说二叉树中深度优先和广度优先遍历实现方式，我们做二叉树相关题目，经常会使用递归的方式来实现**深度优先遍历**，也就是实现前中后序遍历，使用递归是比较方便的。
+
+**之前我们讲栈与队列的时候，就说过栈其实就是递归的一种实现结构**，也就说前中后序遍历的逻辑其实都是可以==借助栈使用递归的方式==来实现的。
+
+而**广度优先遍历**的实现一般使用==队列==来实现，这也是队列先进先出的特点所决定的，因为需要先进先出的结构，才能一层一层的来遍历二叉树。
+
+
+
+note:二叉树遍历：第i个节点的左子节点：2i+1 ；第i个节点的右子节点：2i+2
+
+### ※二叉树的递归遍历
+
+三步走：
+
+1.确定递归函数的参数和返回值
+
+2.确定终止条件
+
+3.确定单层递归的逻辑
+
+大多数二叉树的题目需要传入递归函数的参数不多，**一般就是传入一个根节点以及一个数组，用来放遍历的结果**。
+
+**二叉树的前序遍历**
+
+```c++
+class Solution {
+public:
+    vector<int> preorderTraversal(TreeNode* root) {
+        vector<int> result;
+        traversal(root, result);
+        return result;
+    }
+
+    void traversal(TreeNode* cur, vector<int>& vec){
+        if(cur == nullptr){
+            return;
+        }
+        vec.push_back(cur->val);    // 中
+        traversal(cur->left, vec);  //左
+        traversal(cur->right, vec);  //右
+    }
+};
+```
+
+前序，中序，后续遍历的思想都一样，只是13-15行的顺序不同，只需要遵循前面说的遍历顺序即可。
+
+### 二叉树的迭代遍历
+
+所有的递归操作在理论上都可以通过**栈**这种数据结构实现。
+
+二叉树的前序遍历和后续遍历方法可以互相改，只需要更改三行即可。
+
++ 前序遍历和后序遍历
+
+前序遍历：
+
+```c++
+vector<int> preorderTraversal(TreeNode* root) {
+    stack<TreeNode*> st;
+    vector<int> result;
+    if (root == NULL) return result;
+    st.push(root);
+    while (!st.empty()) {
+        TreeNode* node = st.top();                       // 中
+        st.pop();
+        result.push_back(node->val);
+        if (node->right) st.push(node->right);           // 右（空节点不入栈）
+        if (node->left) st.push(node->left);             // 左（空节点不入栈）
+    }
+    return result;
+}
+```
+
+后序遍历：
+
+```c++
+vector<int> postorderTraversal(TreeNode* root) {
+    stack<TreeNode*> st;
+    vector<int> result;
+    //判断result是否为空节点
+    if (root == NULL) return result;
+    st.push(root);
+    while (!st.empty()) {
+        TreeNode* node = st.top();                       
+        st.pop();
+        result.push_back(node->val);
+        if (node->left) st.push(node->left);            
+
+        if (node->right) st.push(node->right);           
+    }
+    reverse(result.begin(), result.end());
+    return result;
+}
+```
+
+由于前序遍历的顺序是中左右，在用迭代法实现的过程中，我们使用栈来模拟递归，那么根据栈后进先出的规则，就应该先将根节点放入栈中，再放**右节点，再放左节点**。因为查询栈中节点的时候是先查询后进入的节点。
+
+后序遍历的顺序只需要先将左子节点放入，再将右子节点放入即可，最后注意要反转整个结果，结果才是左右中
+
+由于中序遍历的访问顺序和处理顺序不一致，所以上面两种方法在这不适用。那么**在使用迭代法写中序遍历，就需要借用指针的遍历来帮助访问节点，栈则用来处理节点上的元素。**
+
+中序遍历：
+
+**思路：栈中存放之前遍历过的节点，在程序循环运行的时候，最先遍历所有的左子节点(直到叶子节点)，然后根据栈中遍历的历史节点再自下而上遍历。**
+
+```c++
+class Solution {
+public:
+    vector<int> inorderTraversal(TreeNode* root) {
+        vector<int> result;
+        stack<TreeNode*> st;
+        TreeNode* cur = root;
+        while (cur != NULL || !st.empty()) {
+            if (cur != NULL) { // 指针来访问节点，访问到最底层
+                st.push(cur); // 将访问的节点放进栈
+                cur = cur->left;                // 左
+            } else {
+                cur = st.top(); // 从栈里弹出的数据，就是要处理的数据（放进result数组里的数据）
+                st.pop();
+                result.push_back(cur->val);     // 中
+                cur = cur->right;               // 右
+            }
+        }
+        return result;
+    }
+};
+```
+
+其实迭代法也是可以实现统一风格的代码的，我们需要对待处理的节点加上标记，使用一个栈完成所有的操作。
+
+```c++
+class Solution {
+public:
+    vector<int> inorderTraversal(TreeNode* root) {
+        vector<int> result;
+        stack<TreeNode*> st;
+        if (root != NULL) st.push(root);
+        while (!st.empty()) {
+            TreeNode* node = st.top();
+            if (node != NULL) {
+                st.pop(); // 将该节点弹出，避免重复操作，下面再将右中左节点添加到栈中
+                if (node->right) st.push(node->right);  // 添加右节点（空节点不入栈）
+
+                st.push(node);                          // 添加中节点
+                st.push(NULL); // 中节点访问过，但是还没有处理，加入空节点做为标记。
+
+                if (node->left) st.push(node->left);    // 添加左节点（空节点不入栈）
+            } else { // 只有遇到空节点的时候，才将下一个节点放进结果集
+                st.pop();           // 将空节点弹出
+                node = st.top();    // 重新取出栈中元素
+                st.pop();
+                result.push_back(node->val); // 加入到结果集
+            }
+        }
+        return result;
+    }
+};
+```
+
+### 二叉树的层序遍历(广度优先搜索)
+
+二叉树的层序遍历实际上思想就是图论中的广度优先搜索，而实现这种算法一般需要使用==队列==这种数据结构。记住层序遍历的代码模版即可完成一类这样的题。
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        queue<TreeNode*> que;
+        if(root != NULL) que.push(root);
+        vector<vector<int>> result;
+        while(!que.empty()){
+            int size = que.size(); //记录当前层节点的个数
+            vector<int> line_;
+            while(size --) { //这个循环中加入每一层的node，size-- 用于控制层数
+                TreeNode* node = que.front();
+                que.pop();
+                if(node->left != NULL) que.push(node->left);
+                if(node->right != NULL) que.push(node->right);
+                line_.push_back(node->val);
+            }
+            result.push_back(line_);
+        }
+        return result;
+        
+    }
+};
 ```
