@@ -1788,6 +1788,10 @@ public:
 
 **另一个关键的地方**在于对终止条件的判定，总共可以分为四种情况。
 
+==为什么这里面一定用的是后序遍历的方式呢？==
+
+因为后序遍历的顺序是左右中，也就是先处理孩子节点，最后处理父节点，这样的好处是可以**不断将孩子的信息返回给上级**，而对称二叉树求的就是根节点的左右子树能否翻转，所以应该用后序遍历。
+
 <img src="learning_leecode.assets/20210203144624414.png" alt="101. 对称二叉树1" style="zoom:67%;" />
 
 ```c++
@@ -1807,7 +1811,9 @@ public:
       else if (right == NULL && left != NULL) return false;
       else if (right == NULL && left == NULL) return true; //这里需要写的原因是避免下面操作空指针
       else if (left->val != right->val) return false;
-      bool outside = compare(left->left, right->right); //找两侧的节点，对于左节点就是找左边，右节点找右边
+      //对于左子树的遍历顺序：左右中
+      //对于右子树的遍历顺序：右左中
+        bool outside = compare(left->left, right->right); //找两侧的节点，对于左节点就是找左边，右节点找右边
       bool inside = compare(left->right, right->left); //找两侧的节点，对于右节点就是找左边，左节点找右边
       bool same = outside && inside; //比较
       return same;
@@ -1815,3 +1821,218 @@ public:
 };
 ```
 
+### 平衡二叉树
+
+首先需要明白两个概念：
+
+- 二叉树节点的深度：指从根节点到该节点的最长简单路径边的条数。
+- 二叉树节点的高度：指从该节点到叶子节点的最长简单路径边的条数。
+
+因为求深度可以从上到下去查 所以需要前序遍历（中左右），而高度只能从下到上去查，所以只能后序遍历（左右中）。
+
+有的同学一定疑惑，为什么104.二叉树的最大深度中求的是二叉树的最大深度，也用的是后序遍历。**那是因为代码的逻辑其实是求的根节点的高度，而根节点的高度就是这棵树的最大深度，所以才可以使用后序遍历。**
+
+**代码里面有一个地方需要注意：在递归获取子树高度的时候，需要判断子树里面是否已经不是平衡二叉了，也就是最后需要判断节点高度差是否大于1，如果大于1，则子树里面已经不是平衡二叉树，直接返回false，通过递归遍历完整个二叉树。**
+
+```c++
+class Solution {
+ public:
+  bool isBalanced(TreeNode* root) {
+    return getHeight(root) != -1;
+
+  }
+
+  // param: 当前传入的节点
+  // return: 以当前传入节点为根节点的树的高度
+  // 使用后序遍历 左右中
+  int getHeight(TreeNode* node) {
+    if (node == NULL) return 0;
+
+    int left_tree = getHeight(node->left); //获取左子树的高度
+    if (left_tree == -1) return -1;
+    int right_tree = getHeight(node->right); //获取右子树的高度
+    if (right_tree == -1) return -1;
+
+    int result = 1 + max(left_tree, right_tree); //中
+    int is_balance = (abs(left_tree - right_tree) > 1);
+    return is_balance ? -1 : result;
+  }
+};
+```
+
+### 二叉树的所有路径
+
+这道题涉及到回溯法！
+
+本题寻找二叉树的路径，很明显是从根节点一直找到叶子节点，首先考虑**前序法**(中左右)，在遍历完一条线路后我们的节点在叶子结点，这时我们需要**返回到父节点**，去寻找下一条路径，这里就用到了回溯的思想，因此在程序中我们需要定义一个path的vector用于存放我们遍历过的路径，然后每当遍历到叶子节点，下一步pop()出这个叶子节点，向上返回。
+
+![257.二叉树的所有路径](learning_leecode.assets/20210204151702443.png)
+
+```c++
+class Solution {
+ public:
+  vector<string> binaryTreePaths(TreeNode* root) {
+    vector<int> path;  vector<string> result;
+    getLine(root, path, result);
+    return result;
+  }
+
+  // param node 当前传入的节点
+  // param path 遍历过程中记录的节点
+  // param result 返回的路径
+  void getLine(TreeNode* node, vector<int>& path, vector<string>& result) {
+    // 前序遍历
+    path.push_back(node->val); //中 注意！！！这里一定要在终止条件的前面，否则最后一个节点不会被添加
+    if (node->left == NULL && node->right == NULL) {
+      //将path中记录的值添加到result中
+      int size = path.size();
+      string path_line;
+      for (int i = 0; i < size; i++) {
+        if(i == size - 1) path_line += to_string(path[i]);
+        else path_line += to_string(path[i]) + "->";
+      }
+      result.push_back(path_line);
+    }
+
+    if (node->left) { //左
+      getLine(node->left, path, result);
+      path.pop_back(); //回溯
+    }
+    if (node->right) { //右
+      getLine(node->right, path, result);
+      path.pop_back(); //回溯
+    }
+  }
+
+
+};
+```
+
+### 左叶子之和
+
+这道题还是需要用后序遍历的方式，因为需要找到左叶子并且返回给上一层。
+
+这道题的难点是如何找到左叶子：**如果一个节点的左节点不为空，且左节点的左节点和右节点都为空，则该节点是一个左叶子。**
+
+```c++
+class Solution {
+  int sumOfLeftLeaves(TreeNode* root) {
+    if (root == NULL) return 0;
+    if(root->left == NULL && root->right ==NULL) return 0;
+    int left_node = sumOfLeftLeaves(root->left);
+    if(root->left != NULL && root->left->left == NULL && root->left->right == NULL) { //判断是左叶子
+      left_node = root->left->val;
+    }
+    int right_node = sumOfLeftLeaves(root->right);
+    int sum = left_node + right_node;
+    return sum;
+
+  }
+
+};
+```
+
+### 找树左下角的值
+
+此题是找到深度最大的最左边的叶子节点的值。这道题用层序遍历十分方便！，只需要先对二叉树进行一遍层序遍历，然后返回最下层的第一个值就可以。
+
+```c++
+class Solution {
+ public:
+  int findBottomLeftValue(TreeNode* root) {
+    vector<vector<int>> result;
+    queue<TreeNode*> que;
+    if (root != NULL) que.push(root);
+
+    while (!que.empty()) {
+      int size = que.size();
+      vector<int> vec;
+      while(size --) {
+        TreeNode* node = que.front();
+        que.pop();
+        if (node->left != NULL) que.push(node->left);
+        if (node->right != NULL) que.push(node->right);
+        vec.push_back(node->val);
+      }
+      result.push_back(vec);
+    }
+    return result.back()[0];
+  }
+};
+```
+
+当然用递归法去做也可以，但是有回溯的过程。
+
+### 路径总和
+
+本题的思路和前面二叉树的所有路径类似，都是需要通过**前序遍历法**从根节点一直找到叶子节点，算出此路径上的总和，然后判断是否和给的target相等，若相等，返回true，若不等，需要**回溯到其父节点**，然后遍历另一条路径上的总和。
+
+整体代码需要关注的是递归函数的返回值，
+
+```c++
+class Solution {
+ public:
+  bool hasPathSum(TreeNode* root, int targetSum) {
+    if (root == NULL) return false;
+    vector<int> vec;
+    return FindPathSum(root, vec, targetSum);
+  }
+
+  bool FindPathSum (TreeNode* node, vector<int>& vec, int targetSum) {
+    vec.push_back(node->val); //中
+    bool result = false;
+    if (node->left == NULL && node->right == NULL) {
+      int sum = 0;
+      for (auto& i : vec) {
+        sum += i;
+      }
+      if (sum == targetSum) return true;
+      return false;
+    }
+
+    if(result == false && node->left) {
+      result = FindPathSum(node->left, vec, targetSum);
+      vec.pop_back();
+    }
+
+    if(result == false && node->right) {
+      result = FindPathSum(node->right, vec, targetSum);
+      vec.pop_back();
+    }
+
+    return result;
+  }
+};
+```
+
+官方的答案：
+
+```cpp
+class Solution {
+private:
+    bool traversal(TreeNode* cur, int count) {
+        if (!cur->left && !cur->right && count == 0) return true; // 遇到叶子节点，并且计数为0
+        if (!cur->left && !cur->right) return false; // 遇到叶子节点直接返回
+
+        if (cur->left) { // 左
+            count -= cur->left->val; // 递归，处理节点;
+            if (traversal(cur->left, count)) return true;
+            count += cur->left->val; // 回溯，撤销处理结果
+        }
+        if (cur->right) { // 右
+            count -= cur->right->val; // 递归，处理节点;
+            if (traversal(cur->right, count)) return true;
+            count += cur->right->val; // 回溯，撤销处理结果
+        }
+        return false;
+    }
+
+public:
+    bool hasPathSum(TreeNode* root, int sum) {
+        if (root == NULL) return false;
+        return traversal(root, sum - root->val);
+    }
+};
+```
+
+### [从中序与后序遍历序列构造二叉树(题目较难)](https://leetcode.cn/problems/construct-binary-tree-from-inorder-and-postorder-traversal/)
