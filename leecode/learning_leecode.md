@@ -2036,3 +2036,110 @@ public:
 ```
 
 ### [从中序与后序遍历序列构造二叉树(题目较难)](https://leetcode.cn/problems/construct-binary-tree-from-inorder-and-postorder-traversal/)
+
+本题主要使用**中序和后序**去切分构造二叉树，还可以用中序和前序去构造，那么为什么不能用前序和后序去构造二叉树呢？因为三者的遍历顺序是这样的：
+
++ 前序 中左右
++ 中序 左中右
++ 后序 左右中
+
+其中前序和后序中的左右是挨着的，因此我们无法找到二者之间的分界点，而中序中的中间节点将左和右分开了，因此可以用于切分。
+
+本题我们使用**递归**的方法一层层的切割二叉树
+
+来看一下一共分几步：
+
+- 第一步：如果数组大小为零的话，说明是空节点了。
+- 第二步：如果不为空，那么取后序数组最后一个元素作为节点元素。
+- 第三步：找到后序数组最后一个元素在中序数组的位置，作为切割点
+- 第四步：切割中序数组，切成中序左数组和中序右数组 （顺序别搞反了，一定是先切中序数组）
+- 第五步：切割后序数组，切成后序左数组和后序右数组
+- 第六步：递归处理左区间和右区间
+
+```c++
+class Solution {
+public:
+    TreeNode* buildTree(vector<int>& inorder, vector<int>& postorder) {
+      //六步走
+      if (inorder.size() == 0 || postorder.size() == 0) return NULL; //1.如果数组大小为0，返回空节点(递归的终止条件)
+      return traversal(inorder, postorder);
+    }
+    TreeNode* traversal (vector<int>& inorder, vector<int>& postorder) {
+      if (postorder.size() == 0) return NULL;
+      int node_num = postorder.back(); //2.不为空，取后序数组最后一个元素作为节点元素,这个节点一定是根节点
+      TreeNode* root = new TreeNode(node_num); //创建一个新的节点
+
+      if (postorder.size() == 1) return root; //遍历到了叶子节点
+
+      auto mid_idx = find(inorder.begin(), inorder.end(), root->val); //3.找到后序最后一个元素在中序数组的位置，作为切割点
+      // std::cout << *mid_idx << '\n';
+      vector<int> left_inorder; vector<int> right_inorder;
+      for (auto itr = inorder.begin(); itr != inorder.end(); itr++) {
+        if (itr < mid_idx) left_inorder.push_back(*itr);
+        if (itr > mid_idx) right_inorder.push_back(*itr);
+      }
+
+      int left_size = left_inorder.size(); //左子树的个数
+      //  int right_size = right_inorder.size(); // 右子树的个数
+
+      vector<int> left_postorder; vector<int> right_postorder;
+      for (int i = 0; i < postorder.size(); i++) {
+        if (i < left_size) left_postorder.push_back(postorder[i]);
+        else right_postorder.push_back(postorder[i]);
+      }
+      right_postorder.pop_back(); //for循环遍历的时候最后添加了分割节点，这里pop掉
+
+      root->left = traversal(left_inorder, left_postorder);
+      root->right = traversal(right_inorder, right_postorder);
+
+      return root;
+
+    }
+};
+```
+
+### 最大二叉树
+
+这道题和上面一道题十分的相似，都是需要去分割数组构造二叉树，因为我们需要从根节点开始构造，因此一般使用前序遍历法递归的去构造，本题我使用的是迭代器，所以内存占用相对较大一些。
+
+```c++
+class Solution {
+public:
+    TreeNode* constructMaximumBinaryTree(vector<int>& nums) {
+      if (nums.empty()) return NULL;
+      auto max_num = max_element(nums.begin(),nums.end());
+      TreeNode* root = new TreeNode(*max_num); //构建一个新的节点
+      vector<int> left_list; vector<int> right_list;
+      for (auto itr = nums.begin(); itr != nums.end(); itr++) {
+        if (itr < max_num) left_list.push_back(*itr);
+        if (itr > max_num) right_list.push_back(*itr);
+      }
+      root->left = constructMaximumBinaryTree(left_list);
+      root->right = constructMaximumBinaryTree(right_list);
+      return root;
+
+    }
+};
+```
+
+### 合并二叉树
+
+本题的难点在于同时操作两颗二叉树，为了方便起见，我们可以将二叉树合并的结果放到第一颗二叉树上，这样就不用再重复构建一颗二叉树了，本题使用前序递归法最简单代码如下：
+
+```c++
+class Solution {
+public:
+    TreeNode* mergeTrees(TreeNode* root1, TreeNode* root2) {
+      if (root1 == NULL) return root2; //如果root1是NULL，则合并后是root2
+      if (root2 == NULL) return root1; //如果root2是NULL，则合并后是root1     
+
+      root1->val += root2->val;
+
+      root1->left = mergeTrees(root1->left, root2->left);
+      root1->right = mergeTrees(root1->right, root2->right);
+      return root1;
+    }
+};
+```
+
+### 
