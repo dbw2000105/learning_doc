@@ -2197,3 +2197,89 @@ public:
     }
 };
 ```
+
+本题有两个陷阱：
+
+陷阱1：
+
+**不能单纯的比较左节点小于中间节点，右节点大于中间节点就完事了**。
+
+写出了类似这样的代码：
+
+```cpp
+if (root->val > root->left->val && root->val < root->right->val) {
+    return true;
+} else {
+    return false;
+}
+```
+
+**我们要比较的是 左子树所有节点小于中间节点，右子树所有节点大于中间节点**。所以以上代码的判断逻辑是错误的。
+
+陷阱2：测试样例中有int的最小值，不能单纯的将最小值设置为int的最小值，可以用节点左右比较法，也可以改为long
+
+### 二叉搜索树的最小绝对差
+
+这道题是在二叉树中使用双指针法！
+
+我们要找的是一颗二叉树中任意两不同节点值之间的最小差值。我们所使用的方法是通过双指针，同时中序遍历二叉树，一个指向当前节点，另一个指向上一个节点，然后不断计算两个节点的差值，记录最小差值即可。
+
+```c++
+class Solution {
+public:
+    TreeNode* pre;
+    int result = INT_MAX;
+    int getMinimumDifference(TreeNode* root) {
+      tarversal(root);
+      return result;
+    }
+    void tarversal(TreeNode* cur) {
+      if (cur == NULL) return ;
+      tarversal(cur->left);
+      if(pre != NULL) {
+        result = min(result, cur->val - pre->val);
+      }
+      pre = cur;
+      tarversal(cur->right);  
+    }
+};
+```
+
+注意第15行这里的操作，因为cur节点一直在递归遍历，当遍历到根节点会向上回溯，这时，pre节点相当于一直在追着cur节点走，这样就可以通过双指针一次遍历完整个二叉树。
+
+### 二叉搜索树中的众数
+
+这道题稍微复杂一些，主要是对于中序遍历的"中"的操作有些复杂。当然，为了节省空间，本题还是使用双指针法遍历，如果二叉树中使用了**双指针**，那么最好将**pre，result**这些声明成全局变量。
+
+```cpp
+class Solution {
+public:
+    TreeNode* pre;
+    int max_count = INT_MIN;
+    vector<int> result;
+    int count = 1;
+    vector<int> findMode(TreeNode* root) {
+      tarversal(root);
+      return result;
+    }
+    void tarversal(TreeNode* cur) {
+      if (cur == NULL) return;
+      tarversal(cur->left);
+
+      if(pre == NULL) count = 1;
+      else if (cur->val == pre->val) count++;
+      else count = 1;
+
+      if (count == max_count) result.push_back(cur->val); //找到了当前的最大的数，把他放到result中
+      else if (count > max_count) { //如果当前count比记录的最大的count还要大，把result清空并更新max_count
+        max_count = count;
+        result.clear();
+        result.push_back(cur->val);
+      }
+    
+      pre = cur;
+      tarversal(cur->right);
+    }
+};
+```
+
