@@ -2142,4 +2142,39 @@ public:
 };
 ```
 
-### 
+### 二叉搜索树中的搜索
+
+首先明确概念二叉搜索树的定义：**一颗二叉搜索树的左子树的节点都比他小，右子树的节点都比他大**，这样的树就是一颗二叉搜索树。
+
+由于二叉搜索树中已经为我们确定好了遍历的方向，因此我们不需要考虑前中后序去遍历，这道题的迭代法代码要更简单些：
+
+```cpp
+class Solution {
+public:
+    TreeNode* searchBST(TreeNode* root, int val) {
+      TreeNode* result;
+      while (root != nullptr) {
+        if (val < root->val) root = root->left;
+        else if (val > root->val) root = root->right;
+        else return root;
+      }
+      return nullptr;
+    }
+};
+```
+
+递归法
+
+```cpp
+class Solution {
+public:
+    TreeNode* searchBST(TreeNode* root, int val) {
+        if (root == NULL || root->val == val) return root;
+        if (root->val > val) return searchBST(root->left, val);
+        if (root->val < val) return searchBST(root->right, val);
+        return NULL;
+    }
+};
+```
+
+### 验证二叉搜索树
