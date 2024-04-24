@@ -2178,3 +2178,22 @@ public:
 ```
 
 ### 验证二叉搜索树
+
+本题思路：首先我们需要明确，什么样的树是二叉搜索树，也就是树的左子树都小于根节点，右子树都大于根节点，我们知道中序遍历的流程是：左中右，也就是先遍历左，再中，再右。我们将二叉搜索树用中序遍历，那么就能够得到一个递增的序列，如果遍历出来的得到的不是一个递增的序列，那么就不是二叉搜索时。
+
+```cpp
+class Solution {
+public:
+    TreeNode* pre = NULL; // 用来记录前一个节点
+    bool isValidBST(TreeNode* root) {
+        if (root == NULL) return true;
+        bool left = isValidBST(root->left);
+
+        if (pre != NULL && pre->val >= root->val) return false;
+        pre = root; // 记录前一个节点
+
+        bool right = isValidBST(root->right);
+        return left && right;
+    }
+};
+```
