@@ -2251,6 +2251,18 @@ public:
 
 这道题稍微复杂一些，主要是对于中序遍历的"中"的操作有些复杂。当然，为了节省空间，本题还是使用双指针法遍历，如果二叉树中使用了**双指针**，那么最好将**pre，result**这些声明成全局变量。
 
+代码步骤：
+
++ 判断当前节点是否为空节点，为空则返回
++ 进行中序遍历(左中右)
++ 进行前后节点的计数
+  + pre为空：count =1
+  + 当前节点和上一个节点值相同：count++
+  + 当前节点和上一个节点值不同：count = 1
++ 进行最大计数值的更新：
+  + 如果count = max_count ，表明找到了当前的最大值，把他放到result中
+  + 另外如果count比记录的max_count还要大，则清空原先的result，记录新的max_count，并把当前节点的值放入result
+
 ```cpp
 class Solution {
 public:
@@ -2279,6 +2291,183 @@ public:
     
       pre = cur;
       tarversal(cur->right);
+    }
+};
+```
+
+### 二叉树的最近公共祖先
+
+这道题的核心思想是通过**后序递归**从叶子结点向上遍历，通过**左右子树不断回溯**，最终找到最近的公共祖先。
+
+<img src="learning_leecode.assets/20220922173502.png" alt="img" style="zoom:67%;" />
+
+<img src="learning_leecode.assets/20220922173530.png" alt="img" style="zoom:67%;" />
+
+```cpp
+class Solution {
+public:
+    TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+        if (root == p || root == q || root == NULL) return root;
+        //后序遍历
+        auto left = lowestCommonAncestor(root->left, p, q); 
+        auto right = lowestCommonAncestor(root->right, p, q);
+        if (left != NULL && right != NULL) return root;
+
+        if (left != NULL && right == NULL) return left; //这里要返回找到的左节点
+        else if (left == NULL && right != NULL) return right; //这里返回找到的右节点
+        else return NULL;
+    }
+};
+```
+
+其实这道题需要分类讨论两种情况的，如上面的图所示，但是在写代码的时候直接按照一种去写了，原因是实现情况一的逻辑，顺便包含了情况二。因为遇到 q 或者 p 就返回，这样也包含了 q 或者 p 本身就是公共祖先的情况。
+
+### 二叉搜索树的最近公共祖先
+
+由于二叉搜索树本身就具有顺序，因此我们在做题的过程中要合理利用这个顺序遍历。
+
+本题思路：如果**当前节点比p和q的值都大**，表明我们要找的最近的公共祖先**在当前节点的左子树里**，同理如果**当前节点比p和q的值都小**，表明我们要找的最近的公共祖先**在当前节点的右子树里**，==如果当前节点在p和q之间，那么这个节点就是p和q的最近公共祖先==。
+
+递归法：
+
+```cpp
+class Solution {
+public:
+    TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+      if (root == NULL) return root;
+
+      if (root->val > p->val && root->val > q->val) {
+        auto left = lowestCommonAncestor(root->left, p, q);
+        if (left != NULL) return left;
+      }
+      if (root->val < p->val && root->val < q->val) {
+        auto right = lowestCommonAncestor(root->right, p, q);
+        if (right != NULL) return right;
+      }
+       return root;
+    }
+};
+```
+
+实际上本题由于二叉搜索树的特性使用迭代法更简单！！
+
+```cpp
+class Solution {
+public:
+    TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+     
+     while (root) {
+      if (root->val > p->val && root->val > q->val) root = root->left;
+      else if (root->val < p->val && root->val < q->val) root = root->right;
+      else return root;
+     }
+     return NULL;
+    }
+};
+```
+
+### 二叉搜索树中的插入操作
+
+这道题的思路和上题差不多，我认为用迭代法更加简单！(二叉搜索树因为自带顺序，因此对于此类更加推荐迭代法)，整道题的思路：当节点不为空时，不断遍历，当前节点的值大于val，则节点往左子树移动，同理往右子树移动。直到找到两者之间的位置，插入新的节点。
+
+本题需要注意的有两点：需要两个指针，一个指针指向当前需要遍历的节点，另一个指针指向它的上个节点，这样当找到插入顺序时，通过parent节点进行节点的插入。
+
+```cpp
+class Solution {
+public:
+    TreeNode* insertIntoBST(TreeNode* root, int val) {
+      if (root == NULL) {
+        TreeNode* node = new(TreeNode);
+        node->val = val;
+        root = node;
+        return root;
+      }
+      TreeNode* cur = root;
+      TreeNode* parent = root;
+      while (cur) {
+        parent = cur;
+        if (cur->val > val) cur = cur->left;
+        else if (cur->val < val) cur = cur->right;
+      }
+      TreeNode* node = new(TreeNode);
+      node->val = val;
+      if (parent->val > val)  parent->left = node;
+      else parent->right = node;  
+      return root;
+    }
+};
+```
+
+### 删除二叉搜索树中的节点
+
+搜索树的节点删除要比节点增加复杂的多，有很多情况需要考虑，做好心理准备。
+
+删除二叉搜索树的节点不需要遍历完整个树，当找到要删除的节点时，删除并返回删除后的子树即可。所以对于终止条件比较多，分成以下这几种情况：
+
++ 左不为空，右为空
+  + 直接让左子树连接父节点的左子树即可
+
++ 左为空，右不为空
+  + 直接让右子树连接父节点的右子树即可
++ 左右都为空(叶子结点)
+  + 直接删除，返回NULL
+
++ 左右都不为空(最难处理)
+  + 核心的处理思想为删除当前节点，**让其父节点直接连接自己的右子节点，然后把自己的左子节点直接连在右子树中的最左边的叶子节点上**，如动画所示。
+
+![450.删除二叉搜索树中的节点](learning_leecode.assets/450.删除二叉搜索树中的节点.gif)
+
+```cpp
+class Solution {
+public:
+    TreeNode* deleteNode(TreeNode* root, int key) {
+      if (root == NULL) return NULL;
+      if (root->val == key) {
+        //1.左不为空，右为空
+        //2.左为空，右不为空
+        //3.左右都为空(叶子结点)
+        //4.左右都不为空(最难处理)
+        if(root->left != NULL && root->right == NULL) return root->left;
+        else if (root->left == NULL && root->right != NULL) return root->right;
+        else if (root->left == NULL && root->right == NULL) return NULL;
+        else {
+          TreeNode* cur = root->right;
+          while(cur->left != NULL) cur = cur->left; //找到右子树最左边的叶子节点
+          cur->left = root->left;
+          TreeNode* tmp = root;   // 把root节点保存一下，下面来删除
+          root = root->right;     // 返回旧root的右孩子作为新root
+          delete tmp;             // 释放节点内存（这里不写也可以，但C++最好手动释放一下吧）
+          return root;
+        }
+      }
+      if (root->val > key) root->left =  deleteNode(root->left, key);
+      if (root->val < key) root->right = deleteNode(root->right, key);
+      return root;
+    }
+};
+```
+
+###  修剪二叉搜索树
+
+这道题和上一题很相似，这道题需要删掉所有不在二叉树给定区间内的值，返回一个新的二叉树，注意需要删掉的节点可能不止一个。
+
+note：这道题的问题是：如果左子树比low还要小，这时不能直接全部删掉整个左子树，因为左子树的右子树里面还可能有符合区间的值，因此需要递归遍历左子树的右子树，返回右子树删除后的值。右子树的遍历同理，最后将递归剔除后的根节点的左右子树返回给根节点。
+
+```c++
+class Solution {
+public:
+    TreeNode* trimBST(TreeNode* root, int low, int high) {
+      if (root == nullptr) return root;
+      if (root->val < low) {
+        return trimBST(root->right, low, high); //如果root的左子树值小于low，那么递归向右子树遍历，返回值是符合区间的右子树
+      }
+      if (root->val > high) {
+        return trimBST(root->left, low, high);
+      }
+
+      root->left = trimBST(root->left, low, high);
+      root->right = trimBST(root->right, low, high);
+      return root;
     }
 };
 ```
