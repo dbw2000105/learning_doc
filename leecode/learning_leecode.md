@@ -2847,3 +2847,156 @@ public:
 ![39.组合总和](learning_leecode.assets/20201223170730367-20230310135337214.png)
 
 因此我们选择传入i作为子树中开始的值，这样结果就是正确的。
+
+### 组合总和II
+
+这道题我认为是组合中最难的一道题，因为这道题的去重的逻辑不太好想。
+
+本题同样是给一个数组和一个target，要我们找出数组里面所有相加为target的集合，但和之前的题不同的是，本题的数组中有重复的元素，这就很麻烦了，题目要求我们每个数只能用一次，但是对于重复的数来说，会出现问题。
+
+比如一个集合[1,1,2]要我们找出相加为3的集合，我们可以选择第一个1和2构成[1,2]，但是我们也可以选择第二个1和2构成[1,2]，虽然我们选择的是不同的1，但是最终构成的集合是相同的，这种情况需要我们去除。
+
+<img src="learning_leecode.assets/20230310000918.png" alt="40.组合总和II" style="zoom:67%;" />
+
+把这道题抽象成树的结构，也就是说我们可以在**树的深度上使用重复的元素**(因为数组中有重复的元素)，但是我们不能在树层上使用重复的元素，我们需要对**树层去重**。
+
+考虑使用一个数组用于帮我们记录数字的使用情况：vector<bool> used ，当数字被使用了，置为true，被pop了再置为false。这里面最难的逻辑是如何进行树层去重？
+
+==我们只使用所有重复数的第一个==，**因为第一个数和剩下所有数字的组合一定包含着后面重复数和剩下所有数字的组合**。
+
+为了方便遍历，我们首先需要对数组进行排序，将所有相同的数字都放在一起。
+
+```cpp
+sort(candidates.begin(), candidates.end());
+```
+
+我们因此这样进行去重操作：
+
+```cpp
+if (num[i] == num[i - 1]) continue;
+```
+
+也就是说当我们发现遍历的这个数之前已经用过了，就不再使用，但是有个地方需要我们注意：当遍历第一个的时候，i-1 = -1，而对于c++，索引不能为负，所以我们需要添加判断第一个的逻辑：
+
+```
+if (i > 0 && num[i] == num[i - 1]) continue;
+```
+
+这个逻辑看上去是实现了数层去重，但是仔细观察可以发现，他同样把树枝方向的重复的也去掉了，这是不行的。因此我们需要用到我们之前定义的used数组：
+
+```
+if (num[i] == num[i - 1] && used[i - 1] == false) continue;
+```
+
+used[i - 1] 表示上一个数的使用情况，如果上一个数被使用过了(沿着树枝方向遍历)，那么used[i - 1] 为true，这种情况我们应该保留，而当used[i - 1] 为false时，表明前面那个树没有被用过，这种属于是树层的情况，需要进行去重。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
+        result.clear();
+        path.clear();
+        if (candidates.size() == 0) return result;
+        sort(candidates.begin(), candidates.end());
+        vector<bool> used(candidates.size(), false);
+        backtracking(candidates, used, target, 0);
+        return result;
+    }
+
+    void backtracking (vector<int>& candidates, vector<bool>& used, int target, int startIdx) {
+        if (sum(path) > target) return;
+        if (sum(path) == target) {
+            result.push_back(path);
+            return;
+        }
+
+        for (int i = startIdx; i < candidates.size(); i++) {
+            if (i > 0 && candidates[i] == candidates[i - 1] && used[i - 1] == false) continue;
+            path.push_back(candidates[i]);
+            used[i] = true;
+            backtracking(candidates, used, target, i + 1);
+            path.pop_back();
+            used[i] = false;
+
+        }
+    }
+
+    int sum (vector<int>& path) {
+        int total = 0;
+        for (auto& i : path) {
+            total += i;
+        }
+        return total;
+    }
+};
+```
+
+### 分割回文串
+
+这道题我们需要明确两件事：
+
++ 如何分割字符串
++ 如何判断是否是回文子串
+
+关于分割字符串大体思路和组合相同，我们需要注意的是如何进行划分：使用startIdx控制划分的位置。通过递归，进行树枝的遍历，通过for循环进行树层的遍历。
+
+我们设定的终止条件是：当startIdx遍历到字符串的结尾，将path结果添加到result，而是否是回文串的判断我们写到单层搜索逻辑中。
+
+单层搜索的逻辑：通过判断当前串是否是回文串，决定是否添加到path中。回文串通过双指针判断，当头和尾指针向中间遍历时，每次二者的值都相同，那么这个字符串是回文串。
+
+```cpp
+ bool isPalindrome(const string& s, int start, int end) {
+     for (int i = start, j = end; i < j; i++, j--) {
+         if (s[i] != s[j]) {
+             return false;
+         }
+     }
+     return true;
+ }
+```
+
+那么整体代码如下：
+
+```cpp
+class Solution {
+public:
+    vector<vector<string>> result;
+    vector<string> path;
+    vector<vector<string>> partition(string s) {
+        result.clear();
+        path.clear();
+        backtracking(s, 0);
+        return result;
+    }
+
+    void backtracking (const string& s, int startIdx) {
+        if (startIdx == s.size()) {
+            result.push_back(path);
+            return;
+        };
+
+        for (int i = startIdx; i < s.size(); i++) {
+            if (isPalindrome(s, startIdx, i)) {
+                string str = s.substr(startIdx, i - startIdx + 1); //注意substr中的第二个参数是count
+                path.push_back(str);
+            } else continue;
+            backtracking(s, i + 1);
+            path.pop_back();
+        }
+    }
+
+ bool isPalindrome(const string& s, int start, int end) {
+     for (int i = start, j = end; i < j; i++, j--) {
+         if (s[i] != s[j]) {
+             return false;
+         }
+     }
+     return true;
+ }
+
+};
+```
+
+我们唯一需要注意的地方在第19行和20行。选取的区间是一个左闭右闭的区间，在一个for循环中，startIdx是不会变的，而每次循环i都会加1。还要注意string的substr方法的参数：substr(p, count) 形参传入：位置索引的序号，以及从索引开始包含的字符的个数，即返回区间[pos, pos + count)，因此这里需要传入i - startIdx + 1
