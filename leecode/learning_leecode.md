@@ -2574,3 +2574,276 @@ void backtracking(参数) {
     }
 }
 ```
+
+### 组合问题
+
+这道题是给定两个整数n和k，返回1...n中所有可能的k个数的组合。
+
+其实所谓回溯法并不是什么很高深的算法，本质依然是暴力法，是使用了递归代替了for循环嵌套的问题。
+
+回溯法可以抽象成一个N叉树的结构，如图
+
+![77.组合](learning_leecode.assets/20201123195223940.png)
+
+可以看出这棵树，一开始集合是 1，2，3，4， 从左向右取数，取过的数，不再重复取。
+
+第一次取1，集合变为2，3，4 ，因为k为2，我们只需要再取一个数就可以了，分别取2，3，4，得到集合[1,2] [1,3] [1,4]，以此类推。
+
+**每次从集合中选取元素，可选择的范围随着选择的进行而收缩，调整可选择的范围**。
+
+**图中可以发现n相当于树的宽度，k相当于树的深度**。
+
+那么如何在这个树上遍历，然后收集到我们要的结果集呢？
+
+**图中每次搜索到了叶子节点，我们就找到了一个结果**。
+
+相当于只需要把达到叶子节点的结果收集起来，就可以求得 n个数中k个数的组合集合。
+
+我们使用之前说的回溯法的三部曲进行操作。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<vector<int>> combine(int n, int k) {
+        backtracking(n, k, 1);
+        return result;
+    }
+    void backtracking (int n, int k, int startIdx) {
+        if (path.size() == k) { //收获结果的时候
+            result.push_back(path);
+            return result;
+        }
+        for (int i = startIdx; i <= n ; i++) {
+            path.push_back(i);
+            backtracking(n, k, i + 1);
+            path.pop_back(); //这里是回溯的精髓所在，每次需要将path中的值
+            				//pop出来，再存入别的数，得到结果
+        }
+    }
+};
+```
+
+### 组合问题中的剪枝操作：
+
+对于上述的组合问题可以进行优化，也就是这一部分代码：
+
+```cpp
+for (int i = startIdx; i <= n ; i++) {
+    path.push_back(i);
+    backtracking(n, k, i + 1);
+    path.pop_back(); 
+}
+```
+
+当起始的位置遍历到n不满足k个数的时候，这种遍历就是无效的，可以减掉。比如当n=4，k=3，那么当起始位置是3往后的数，遍历到最后我们也就能获得两个结果，不够3个，这样的情况就要减掉。
+
+写成公式如下：
+
++ 已经选择的元素个数：path.size();
+
++ 所需需要的元素个数为: k - path.size();
++ 列表中剩余元素要大于所需要的元素个数，这时候才是有效的：
+
+（n-i） >= （k - path.size()）
+
++ 等式两边移项：
+
+i <= n - (k - path.size())
+
+因为包括起始位置，我们要是一个左闭的集合，最后还需要加1。
+
+i <= n - (k - path.size()) + 1
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<vector<int>> combine(int n, int k) {
+        backtracking(n, k, 1);
+        return result;
+    }
+    void backtracking (int n, int k, int startIdx) {
+        if (path.size() == k) { //收获结果的时候
+            result.push_back(path);
+            return;
+        }
+        //剪枝操作
+        for (int i = startIdx; i <= n - (k - path.size()) + 1; i++) {
+            path.push_back(i);
+            backtracking(n, k, i + 1);
+            path.pop_back();
+        }
+    }
+};
+```
+
+### 组合总和III
+
+这道题相对于上一道题来说整体思路类似，只是多了一些剪枝的操作。因为题目中国要求组合中的数只有1-9，且组合相加必须为k，那么就有这两种剪枝的情况：
+
+1.  当所有数相加大于9，直接返回
+2. 当path的数量为k，且相加等于n，收获结果
+3. 当遍历剩余的数不足题目要求(9 - (k - path.size()) + 1)，直接剪掉
+
+```cpp
+class Solution {
+public:
+    vector<int> path;
+    vector<vector<int>> result;
+    vector<vector<int>> combinationSum3(int k, int n) {
+        backtracking(k, n, 1);
+        return result;
+    }
+
+    void backtracking(int k, int n, int startIdx) {
+        if (sum(path) > n) return;
+        if (path.size() == k && sum(path) == n) {
+            result.push_back(path);
+            return;
+        }
+        
+        for (int i = startIdx; i <= 9 - (k - path.size()) + 1; i++) {
+            path.push_back(i);
+            backtracking(k, n, i + 1);
+            path.pop_back();
+        }
+    }
+
+    int sum (vector<int>& path) {
+        int total = 0;
+        for (auto& i : path) {
+            total += i;
+        }
+        return total;
+    }
+};
+```
+
+### 电话号码的字母组合
+
+这道题与上一道题的整体思路是类似的，但是区别是上一题是在一个集合中找组合，而这一题是在两个组合中，因此不需要特殊的变量去重。
+
+1. 数字和字母如何映射。
+2. 两个字母就两个for循环，三个字符我就三个for循环，以此类推，然后发现代码根本写不出来。
+3. 输入1 * #按键等等异常情况。
+
+关于字母的映射问题，一般使用数组更合适，用数字表示索引，里面存放内容。
+
+```cpp
+const string letterMap[10] = {
+    "", // 0
+    "", // 1
+    "abc", // 2
+    "def", // 3
+    "ghi", // 4
+    "jkl", // 5
+    "mno", // 6
+    "pqrs", // 7
+    "tuv", // 8
+    "wxyz", // 9
+};
+```
+
+这道题画成树结构如下：
+
+![17. 电话号码的字母组合](learning_leecode.assets/20201123200304469.png)
+
+**其实对于回溯的题目，最好还是画一个图，分清楚哪些决定树的深度，哪些决定树的宽度，再去写代码思路就会更加的清晰**
+
+对于本题来说，树的深度由输入的数字的个数决定，而树的宽度由输入的数字所映射的字母的个数决定。
+
+本题我们使用一个 int idx作为我们遍历到哪个数字位置的记录，从0开始，直到最后一个数。
+
+```cpp
+class Solution {
+public:
+    string string_buff[10] = {
+        "", // 0
+        "", // 1
+        "abc", // 2
+        "def", // 3
+        "ghi", // 4 
+        "jkl", // 5
+        "mno", //6
+        "pqrs", //7
+        "tuv", //8
+        "wxyz", //9
+    }; 
+    vector<string> result;
+    string s;
+    vector<string> letterCombinations(string digits) {
+        s.clear();
+        result.clear();
+        if (digits.size() == 0) return result;
+        backtracking(digits, 0);
+        return result;
+    }
+
+    void backtracking(const string& digits, int idx) {
+        if (idx == digits.size()) { 
+            result.push_back(s);
+            return;
+        }
+        int num = digits[idx] - '0';
+        string tmp = string_buff[num];
+        for (int i = 0; i < tmp.size(); i++) {
+            s.push_back(tmp[i]);
+            backtracking(digits, idx + 1);
+            s.pop_back();
+        }
+    }
+};
+```
+
+==note: 回溯法的遍历一般遵循着下面的规则：for循环用于控制树的宽度，而回溯(递归)用于控制树的深度。==
+
+### 组合总和
+
+这道题又回到了求一个集合的元素，因此我们首先想到需要一个startIdx用于控制遍历的个数，但是这道题还说元素可以重复使用，因此不能像前面组合一样，将startIdx用于控制深度的遍历。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<vector<int>> combinationSum (vector<int>& candidates, int target) {
+        result.clear();
+        path.clear();
+        if (candidates.size() == 0) return result;
+        backtracking(candidates, target, 0);
+
+        return result;
+    }
+    void backtracking (vector<int>& candidates, int target, int startIdx) {
+        if (sum(path) > target) return; // 重点1
+        if (sum(path) == target) {
+            result.push_back(path);
+            return;
+        }
+        for (int i = startIdx; i < candidates.size(); i++) {
+            path.push_back(candidates[i]);
+            backtracking(candidates, target, i); // 重点2
+            path.pop_back();
+        }
+    }
+    int sum (vector<int>& path) {
+        int total = 0;
+        for (auto& i : path) {
+            total += i;
+        }
+        return total;
+    }
+};
+```
+
+这里面有两块需要着重考虑，第一是我们要在合适的地方进行剪枝，减少运算量。
+
++ 重点一，也就是当path中存的数的总和大于target时，直接return
++ 重点二，就是传入回溯函数backtracking的参数，不能像之前组合那样，传入一个startIdx，这样每次深度递增，不会遍历到重复的数据，但这次我们可以遍历相同的数，只是所选的组合不同即可，如图：
+
+![39.组合总和](learning_leecode.assets/20201223170730367-20230310135337214.png)
+
+因此我们选择传入i作为子树中开始的值，这样结果就是正确的。
