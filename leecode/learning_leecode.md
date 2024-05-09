@@ -3000,3 +3000,162 @@ public:
 ```
 
 我们唯一需要注意的地方在第19行和20行。选取的区间是一个左闭右闭的区间，在一个for循环中，startIdx是不会变的，而每次循环i都会加1。还要注意string的substr方法的参数：substr(p, count) 形参传入：位置索引的序号，以及从索引开始包含的字符的个数，即返回区间[pos, pos + count)，因此这里需要传入i - startIdx + 1
+
+### 复原IP地址
+
+这一道题是上一道题的扩展，我们要在一个字符串中分割出有效的IP地址，其中所谓的有效IP地址的判断是首字母不为0，并且值不能超过255。因此本题主要需要完成两步：递归分割字符串，判断是否是有效的IP。
+
++ 判断有效IP我们单独写一个函数实现
+
+```cpp
+bool isValid(string& s, int left, int right)
+```
+
+我们传入字符串s，和左右区间left，right，如果s中从左到右区间(左闭右闭)都为有效，那么这个字符串为有效字符串。
+
+```cpp
+bool isValid(string& s, int left, int right) {
+    if (left > right) return false;
+
+    if (s[left] == '0' && left != right) return false; // 0开头的数字不合法
+    int num = 0;
+    for (int i = left; i <= right; i++) {
+        if (s[i] > '9' || s[i] < '0') return false; // 遇到非数字字符不合法
+
+        num = num * 10 + (s[i] - '0');
+        if (num > 255)  return false; // 如果大于255了不合法 
+    }
+    return true;
+}
+```
+
++ 分割字符
+
+我们通过回溯的方式进行字符串的分割，除了常规变量startIdx，这里我们需要声明一个特殊的变量作为递归的接口。pointNum，作用是控制分割的数量，递归结束的标志是当字符串中被插入了三个“.”，因为一个正确的IP地址必须是4段，右三个“.”作为分割。当已经存在三个“.”，我们需要判断最后一段是否也是有效字符，如果是则将最终分割的结果添加到结果集中。
+
+本题和上题一样，分割线是startIdx，他的前面是已经分割好的字符串，后面是没有分割的，通过[startIdx, i]进行有效字符的判断并进行分割。
+
+```cpp
+class Solution {
+public:
+    vector<string> result;
+    vector<string> restoreIpAddresses(string s) {
+        result.clear();
+        backtracking(s, 0, 0);
+        return result;
+    }
+    void backtracking (string& s, int startIdx, int pointNum) {
+        if (pointNum == 3) {
+            if (isValid(s, startIdx, s.size() - 1)) {
+                result.push_back(s);
+                return;
+            }
+        }
+        for (int i = startIdx; i < s.size(); i++) {
+            if (isValid(s, startIdx, i)) {
+                s.insert(s.begin() + i + 1 , '.');
+                pointNum ++;
+                backtracking(s, i + 2, pointNum);
+                pointNum --;
+                s.erase(s.begin() + i + 1); 
+            }
+        }
+    }
+    bool isValid(string& s, int left, int right) {
+        if (left > right) return false;
+        
+        if (s[left] == '0' && left != right) return false; // 0开头的数字不合法
+        int num = 0;
+        for (int i = left; i <= right; i++) {
+            if (s[i] > '9' || s[i] < '0') return false; // 遇到非数字字符不合法
+
+            num = num * 10 + (s[i] - '0');
+            if (num > 255)  return false; // 如果大于255了不合法 
+        }
+        return true;
+    }
+};
+```
+
+### 子集
+
+这道题其实并不难，我们要收集数组中所有元素，给出所有的子集的集合(包括空子集)，因为不要求顺序，因此我们可以按照任意的顺序排列。
+
+如果把 子集问题、组合问题、分割问题都抽象为一棵树的话，**那么组合问题和分割问题都是收集树的叶子节点，而子集问题是找树的所有节点！**
+
+**那么既然是无序，取过的元素不会重复取，写回溯算法的时候，for就要从startIndex开始，而不是从0开始！**
+
+有同学问了，什么时候for可以从0开始呢？
+
+求排列问题的时候，就要从0开始，因为集合是有序的，{1, 2} 和{2, 1}是两个集合，排列问题我们后续的文章就会讲到的。
+
+![78.子集](learning_leecode.assets/78.子集.png)
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<vector<int>> subsets(vector<int>& nums) {
+        result.clear();
+        path.clear();
+
+        backtracking(nums, 0);
+        return result;
+    }
+    void backtracking(vector<int>& nums, int startIdx) {
+        result.push_back(path);
+        if (startIdx >= nums.size()) return;
+        for (int i = startIdx; i < nums.size(); i++ ) {
+            path.push_back(nums[i]);
+            backtracking(nums, i + 1);
+            path.pop_back();
+        }
+        return;
+    }
+};
+```
+
+### 子集II
+
+这题和组合II的思路完全一致，核心思想就是树层要去重，树枝不能去重，按照组合II的思路，我们定义一个used数组，树层去重的关键是：
+
+```cpp
+if (i > 0 && nums[i] == nums[i - 1] && used[i - 1] == false) continue;
+```
+
+也就是说我们在树层上只用所有重复数字的第一个，而对于树枝层面不做去重，因此used[i - 1]的作用就体现出来了。
+
+剩下的与上一题思路一致。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        result.clear();
+        path.clear();
+        vector<bool> used(nums.size());
+        sort(nums.begin(), nums.end());
+        backtracking(nums, 0, used);
+        return result;
+    }
+    void backtracking(vector<int>& nums, int startIdx, vector<bool>& used) {
+        result.push_back(path);
+        if (startIdx >= nums.size()) return;
+        
+        for (int i = startIdx; i < nums.size(); i++) {
+            if (i > 0 && nums[i] == nums[i - 1] && used[i - 1] == false) continue;
+
+                path.push_back(nums[i]);
+                used[i] = true;
+                backtracking(nums, i + 1, used);
+                path.pop_back();
+                used[i] = false;
+        }
+        return;
+    }
+};
+```
+
