@@ -3159,3 +3159,175 @@ public:
 };
 ```
 
+### 递增子序列
+
+这道题看似和前面的思路一致，但是实际上由于我们不能更改原数组的顺序，因此之前排序使用used的方法就不能用了，我们使用哈希表处理重复的情况。我们可以使用set或者数组进行数据的记录，当然和之前的题思路相同，我们需要对树层去重，不对树枝去重，因此我们的set或者数组是在每一层中是有用的，也就是在for循环遍历的过程中，而在递归的时候不起作用。
+
+另外，题目要求是递增数组，因此我们可以写出这样的判断条件：
+
+```cpp
+if ((!path.empty() && nums[i] < path.back())
+                    || uset.find(nums[i]) != uset.end()) continue;
+```
+
+这样每次递归时，set都是新设置的，不起作用，而当for循环时，set用于控制遍历过的元素。
+
+整体代码如下：
+
+unordered_set:
+
+```cpp
+class Solution {
+  public:
+  vector<vector<int>> result;
+  vector<int> path;
+  vector<vector<int>> findSubsequences(vector<int>& nums) {
+    result.clear();
+    path.clear();
+    backtracking(nums, 0);
+    return result;
+  }
+  void backtracking(const vector<int>& nums, int startIdx) {
+    if (path.size() > 1) result.push_back(path);
+    unordered_set<int> uset;
+    for (int i = startIdx; i < nums.size(); i++) {
+        if ((!path.empty() && nums[i] < path.back())
+                    || uset.find(nums[i]) != uset.end()) continue;
+        
+        uset.insert(nums[i]);
+        path.push_back(nums[i]);
+        backtracking(nums, i + 1);
+        path.pop_back();
+      
+    }
+  }
+};
+```
+
+数组：
+
+```cpp
+// 版本二
+class Solution {
+private:
+    vector<vector<int>> result;
+    vector<int> path;
+    void backtracking(vector<int>& nums, int startIndex) {
+        if (path.size() > 1) {
+            result.push_back(path);
+        }
+        int used[201] = {0}; // 这里使用数组来进行去重操作，题目说数值范围[-100, 100]
+        for (int i = startIndex; i < nums.size(); i++) {
+            if ((!path.empty() && nums[i] < path.back())
+                    || used[nums[i] + 100] == 1) {
+                    continue;
+            }
+            used[nums[i] + 100] = 1; // 记录这个元素在本层用过了，本层后面不能再用了
+            path.push_back(nums[i]);
+            backtracking(nums, i + 1);
+            path.pop_back();
+        }
+    }
+public:
+    vector<vector<int>> findSubsequences(vector<int>& nums) {
+        result.clear();
+        path.clear();
+        backtracking(nums, 0);
+        return result;
+    }
+};
+
+```
+
+### 全排列
+
+排列问题要清楚与组合问题的区别，对于一个集合{1, 2}和{2, 1}，这是一个组合，因为组合中的元素可以是无序的，但是这是两个排列，因为顺序不同。
+
+这就对去重的操作有影响，在组合问题中，我们需要一个变量startIdx用于控制元素的选取，在树枝方向，选过的元素不会再选，而对于排列问题，已经选过的元素也可以被再次选中，比如{1, 2, 3}，我们第一次选择了{1}，剩下{2, 3}，第二次选择了{2}，剩下{1, 3}。我们需要去掉的就是在同一分支上相同的元素。因此我们需要used数组。
+
+![46.全排列](learning_leecode.assets/20211027181706.png)
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<bool> used;    
+  vector<vector<int>> permute(vector<int>& nums) {
+        result.clear();
+        path.clear();
+        used.resize(nums.size());
+        backtracking(nums);
+        return result;
+    }
+    void backtracking(vector<int>& nums) {
+        if (path.size() == nums.size()) {
+            result.push_back(path);
+            return;
+        } 
+        for (int i = 0; i < nums.size(); i++) {
+            if (used[i] == true) {
+                continue;
+            }
+            path.push_back(nums[i]);
+            used[i] = true; 
+            backtracking(nums);
+            path.pop_back();
+            used[i] = false;
+        }
+    }
+};
+```
+
+### 全排列II
+
+这道题和上一题的区别是数组中可能有重复的元素，因此我们需要在树层上去重，而树枝上不需要去重，这和之前的逻辑都是相同的。我们需要如下判断进行树层去重：
+
+```cpp
+if (i > 0 && nums[i] == nums[i - 1] && used[i - 1] == false)
+    ...
+```
+
+同样的，对于使用过的元素，我们进行跳过：
+
+```
+if (used[i]) continue; 
+```
+
+可以写出如下代码：
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> result;
+    vector<int> path;
+    vector<bool> used;
+    vector<vector<int>> permuteUnique(vector<int>& nums) {
+        result.clear();
+        path.clear();
+        used.resize(nums.size());
+        sort(nums.begin(), nums.end());
+        backtracking(nums);
+        return result;
+    }
+
+    void backtracking(vector<int>& nums) {
+        if (path.size() == nums.size()) {
+            result.push_back(path);
+            return;
+        }
+
+        for (int i = 0; i < nums.size(); i++) {
+            if (used[i] == true) continue;
+            if (i > 0 && nums[i] == nums[i - 1] && used[i - 1] == false) continue;
+
+            path.push_back(nums[i]);
+            used[i] = true;
+            backtracking(nums);
+            path.pop_back();
+            used[i] = false;
+        }
+    }
+};
+```
+
