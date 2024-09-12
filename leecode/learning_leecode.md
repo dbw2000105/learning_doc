@@ -10,6 +10,8 @@
 
 5.前 K 个高频元素
 
+[TOC]
+
 # 算法积累
 
 ## 数组
@@ -3329,5 +3331,1764 @@ public:
         }
     }
 };
+```
+
+## 贪心算法
+
+贪心算法很多都是基于常识的，可能刷下来整体的感觉是东一下西一下，但这就是贪心的特点。
+
+### 分发饼干
+
+此题相对来说较为简单，大体思路如下：
+
+为了满足更多的小孩，就不要造成饼干尺寸的浪费。
+
+大尺寸的饼干既可以满足胃口大的孩子也可以满足胃口小的孩子，那么就应该优先满足胃口大的。
+
+**这里的局部最优就是大饼干喂给胃口大的，充分利用饼干尺寸喂饱一个，全局最优就是喂饱尽可能多的小孩**。
+
+可以尝试使用贪心策略，先将饼干数组和小孩数组排序。
+
+然后从后向前遍历小孩数组，用大饼干优先满足胃口大的，并统计满足小孩数量。
+
+如图：
+
+![img](learning_leecode.assets/20230405225628.png)
+
+在代码中，我们最外层的for循环用于遍历小孩的胃口，内层判断饼干与小孩的匹配关系。
+
+```cpp
+class Solution {
+public:
+    int findContentChildren(vector<int>& g, vector<int>& s) {
+        sort(g.begin(), g.end());
+        sort(s.begin(), s.end());
+        int index = s.size() - 1; // 饼干数组的下标
+        int result = 0;
+        for (int i = g.size() - 1; i >= 0; i--) { // 遍历胃口
+            if (index >= 0 && s[index] >= g[i]) { // 遍历饼干
+                result++;
+                index--;
+            }
+        }
+        return result;
+    }
+};
+```
+
+代码中孩子的胃口相当于是被遍历的对象，我们从最大开始遍历，也就相当于拿着最大的饼干去喂胃口最大的孩子，如果喂不了，就换成胃口第二大的孩子，以此类推。
+
+### 摆动序列
+
+这道题的思路较为巧妙，我们要求得一个序列中最大长度得摆动序列得个数。那么我们势必会遇到三种情况：
+
+情况一：上下坡中有平坡
+
+![img](learning_leecode.assets/20230106170449.png)
+
+情况二：数组首尾两端
+
+![376.摆动序列1](learning_leecode.assets/20201124174357612.png)
+
+情况三：单调坡中有平坡
+
+![img](learning_leecode.assets/20230108171505.png)
+
+对于数组中只有一个元素或两个不相等元素得情况，直接返回就可以。很容易想到用双指针，pre指向前一个差值，cur指向后一个插值。
+
+即为：pre = nums[i] - nums[i - 1]       cur = nums[i+1] - nums[i]
+
+那么每次都需要三个数据，这在for循环遍历中不是很方便，因为对于边界条件很难控制。
+
+因此这里换一种思路，让cur保持nums[i+1] - nums[i]的形式，而pre在更新的时候直接等于cur
+
+```cpp
+for (int i = 0; i < nums.size() - 1; i++) {
+	cur = nums[i+1] - nums[i]
+	if(...){}
+	pre = cur
+}
+```
+
+那么if语句判断是否是波峰或波谷，当cur >=0且pre<0时，这种情况是不行的，同理cur<=0且pre>0也不行。因为初始的pre=0，那么这个判断条件就永不成立。因此应该为：
+
+```
+if((cur > 0 && pre <= 0) || (cur < 0 && pre >= 0))
+```
+
+判断条件解决了，但是这样每次循环pre都紧紧的跟着cur，遇到单调的情况就会出现问题，比如情况三。因此我们的改进策略是当判断出新的波峰或波谷时候，我们的pre才做一次更新，整体代码如下：
+
+```cpp
+class Solution {
+public:
+    int wiggleMaxLength(vector<int>& nums) {
+        if (nums.size() <= 1) return nums.size();
+        int curDiff = 0; // 当前一对差值
+        int preDiff = 0; // 前一对差值
+        int result = 1;  // 记录峰值个数，序列默认序列最右边有一个峰值
+        for (int i = 0; i < nums.size() - 1; i++) {
+            curDiff = nums[i + 1] - nums[i];
+            // 出现峰值
+            if ((preDiff <= 0 && curDiff > 0) || (preDiff >= 0 && curDiff < 0)) {
+                result++;
+                preDiff = curDiff; // 注意这里，只在摆动变化的时候更新prediff
+            }
+        }
+        return result;
+    }
+};
+```
+
+### 最大子数组合
+
+这道题要求我们在一个数组中找到最大的子数的和，我们只需要返回他的和即可。这道题贪心的思路比较巧妙，在一个数组中比如：[-3, 1, 2, 5, -2, 4]如果累加和小于0，那么其对于后面数字的累计一定是减小的作用，但是不能认为当前这个数是负数，就舍弃，这种思路是错误的，一定是累加和为负。当累加和为负时，我们重新选择子数组的起始值。
+
+![53.最大子序和](learning_leecode.assets/53.最大子序和.gif)
+
+不难写出如下代码：
+
+```cpp
+class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+        int count = 0;
+        int result = INT_MIN;
+        for (int i = 0; i < nums.size(); i++) {
+            count += nums[i];
+            result = max(count, result);
+            if (count < 0) count = 0;
+        }
+        return result;
+    }
+};
+```
+
+### 买卖股票的最佳时机II
+
+买卖股票想要获得最大的利润，我们的贪心策略是统计每天买卖的盈亏，只统计挣钱的日期，那么得到的最大利润就是所有挣钱的总和。
+
+![122.买卖股票的最佳时机II](learning_leecode.assets/2020112917480858-20230310134659477.png)
+
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        if (prices.size() == 1) return 0;
+        int profit = 0;
+        int count = 0;
+        for (int i = 0; i < prices.size() - 1; i++) {
+            profit = prices[i + 1] - prices[i];
+            if (profit > 0) {
+                count += profit;
+            }
+        }
+        return count;
+
+    }
+};
+```
+
+### 跳跃游戏
+
+这道题和跳跃游戏II一起学习。相比之下，本题更加简单，我们需要在给定数组中判断能否跳跃到最后即可，而跳跃游戏II还需要统计最少的跳跃次数。
+
+本题贪心的思路是每次寻求最大的覆盖范围，这里的覆盖范围指的是数组的覆盖范围，是从最左边开始数的。巧妙的思路在于，每次循环的条件设置为最大的覆盖范围，如果能覆盖到最后，则返回true，否则返回false。
+
+![img](learning_leecode.assets/20230203105634.png)
+
+```cpp
+class Solution {
+public:
+    bool canJump(vector<int>& nums) {
+        int cover = 0;
+        if (nums.size() == 1) return true;
+        for (int i = 0; i <= cover; i++) {
+            cover = max( i + nums[i], cover);
+            if (cover >=nums.size() - 1) return true;
+        }
+
+        return false;
+    }
+};
+```
+
+### 跳跃游戏II
+
+本题的关键在于我们需要在当前的覆盖范围中遍历，如果在这个范围内可以遍历到终点，就不需要计数，当遍历完整个范围也不能到终点时，我们再增加覆盖范围，此时跳跃次数加1，这样就能获得最小的跳跃次数。
+
+我之前的错误逻辑：我当时想在跳跃游戏的基础上直接进行修改：
+
+```c++
+class Solution {
+public:
+    int jump(vector<int>& nums) {
+        if (nums.size() == 1) return 0;
+        int count = 0;
+        int cover = 0;
+        for (int i = 0; i <= cover; i++) {
+            if ( i + nums[i] > cover) {
+                cover =  i + nums[i];
+                count++;
+            }
+            if (cover >= nums.size() - 1) break;
+            cout<<count<<'\n';
+        }
+        return count;
+    }
+};
+```
+
+但是这样得出的答案是错误的。因为在扩展覆盖范围的时候可能并不是最优的跳跃时机，正确的思路是当我们在所有的覆盖范围内遍历完，都无法到终点时，再增加跳跃次数。
+
+```c++
+class Solution {
+public:
+    int jump(vector<int>& nums) {
+        if (nums.size() == 1) return 0;
+        int count = 0;
+        int cur = 0; //当前的覆盖范围
+        int next = 0; //下一步的覆盖范围
+        for (int i = 0; i < nums.size(); i++) {
+            next = max(i + nums[i], next);
+            if (i == cur && i != nums.size() - 1) {
+                count ++;
+                cur = next;
+            }
+        }
+        return count;
+    }
+};
+```
+
+### K次取反后最大化的数组和
+
+这道题比较偏向于常识性的题目，我们得到一个数组，里面有正有负。现给一个数k，要求翻转数组中的元素，使得总和最大。我们的贪心策略是要将所有的负数进行翻转，如果此时k没有用完，那么我们按照大小顺序，从大到小排序，翻转最后一个也就是最小的数，将k消耗掉。
+
+```cpp
+class Solution {
+public:
+    int largestSumAfterKNegations(vector<int>& nums, int k) {
+        int result = 0;
+        sort(nums.begin(), nums.end(), [](int a, int b) {return abs(a) > abs(b);});
+        // sort(nums.begin(), nums.end());
+
+        for (int i = 0; i < nums.size(); i++) {
+            if (nums[i] < 0 && k > 0) {
+                nums[i] *= -1;
+                k--;
+            }
+        }
+        if (k % 2 != 0) nums.back() *= -1;
+        for (auto i : nums) {
+            result += i;
+        }
+        return result;
+    }
+};
+```
+
+值得注意，这里面排序最好是按照从大到小的绝对值进行排序，因为我们需要把绝对值最小的数放在最后，且在遍历的过程中优先翻转大的负数。当k没有用完时，对最小值进行翻转。
+
+### 加油站
+
+这道题的贪心策略其实和前面的买卖股票有些类似。具体的思路是：我们去统计每一天的盈亏，然后计算累加和，当累加为负数时，重新选择起始点。同时我们需要在循环中统计所有的盈亏的和，如果整个和小于0，那么肯定无法循环一圈，这不管从哪个地方起始都是一样的。
+
+![img](learning_leecode.assets/20230117165628.png)
+
+那么为什么一旦[0，i] 区间和为负数，起始位置就可以是i+1呢，i+1后面就不会出现更大的负数？
+
+如果出现更大的负数，就是更新i，那么起始位置又变成新的i+1了。
+
+那有没有可能 [0，i] 区间 选某一个作为起点，累加到 i这里 curSum是不会小于零呢？ 如图：
+
+![img](learning_leecode.assets/20230117170703.png)
+
+如果 curSum<0 说明 区间和1 + 区间和2 < 0， 那么 假设从上图中的位置开始计数curSum不会小于0的话，就是 区间和2>0。
+
+区间和1 + 区间和2 < 0 同时 区间和2>0，只能说明区间和1 < 0， 那么就会从假设的箭头初就开始从新选择其实位置了。
+
+**那么局部最优：当前累加rest[i]的和curSum一旦小于0，起始位置至少要是i+1，因为从i之前开始一定不行。全局最优：找到可以跑一圈的起始位置**。
+
+局部最优可以推出全局最优，找不出反例，试试贪心！
+
+```c++
+class Solution {
+public:
+    int canCompleteCircuit(vector<int>& gas, vector<int>& cost) {
+        int start = 0;
+        int cur_sum = 0;
+        int total_sum = 0;
+        for (int i = 0; i < gas.size(); i++) {
+            cur_sum += gas[i] - cost[i];
+            total_sum += gas[i] - cost[i];
+
+            if (cur_sum < 0) {
+                start = i + 1;
+                cur_sum = 0;
+            }
+        }
+        if (total_sum < 0)  return -1;
+         else  return start;
+    }
+};
+```
+
+### 分发糖果
+
+这是一道hard题，思路相对来说比较巧妙。题目要求我们给孩子分发糖果，每个孩子最少可以分到一颗糖果。每个孩子都有相应评分，相邻孩子之间评分更高的孩子可以获得更多的糖果。
+
+这道题不能一次性顾两边，既要考虑左边的情况又要考虑右边的情况，这样是非常混乱的。正确的贪心思路是只考虑一边，再考虑另一边。
+
++ 我们先考虑右边孩子评分比左边孩子评分高的情况。以评分数组[1,2,2,5,4,3,2]为例
+
+若只考虑右边比左边高，那我们需要**和左边的孩子比较评分**，再在**左边孩子糖果的基础上**进行添加。
+
+第一个孩子左边没有人，所以是1，第二个孩子比左边孩子评分高，故得到2颗糖果。第三个孩子没有左边孩子评分高，所以仍然是一颗糖果。第四个孩子比左边高，故为2，第五个孩子到第七个孩子都没有其左侧孩子评分高，所以都还是1颗。得到数组：[1,2,1,2,1,1,1]
+
+![135.分发糖果](learning_leecode.assets/20201117114916878.png)
+
++ 再考虑左边孩子比右边高的情况，假设我们这次还是从左边开始遍历：
+
+第一个孩子没有其右边高，得1，第二个孩子没有其右边高，得1，第三个孩子没有其右边高，得1，第四个孩子比右边高，得2，第五个孩子比右边高，仍然得2，第六个比右边高，都得2，第七个没有比较对象，得1。得到数组[1,1,1,2,2,2,1]。
+
+![img](learning_leecode.assets/20230202102044.png)
+
+这里有一个比较难理解得地方，就是第四个已经是2了，为什么第五个，第六个也都是2，按理应再加一。实际上这和我们的遍历顺序有关，我们是和右边的孩子评分比较，同时也是和他的糖果数量进行比较，如果我们从左开始遍历，后面的都还没有遍历到，因此都是从1开始加，我们无法用到之前得到的结果，因此这种情况我们应该从后向前遍历。得到这样的结果：[1,1,1,4,3,2,1]
+
+由于题目我们需要同时考虑左右，那么我们对得到的两个数组取最大，得到最后的结果：[1,2,1,4,3,2,1]
+
+![135.分发糖果1](learning_leecode.assets/20201117115658791.png)
+
+```cpp
+class Solution {
+public:
+    int candy(vector<int>& ratings) {
+        vector<int> candy(ratings.size(), 1);
+
+        //首先计算右边孩子比左边孩子大的情况
+        for (int i = 1; i < ratings.size(); i++) {
+            if (ratings[i] > ratings[i -1])  candy[i] = candy[i - 1] + 1; 
+        }
+        //再计算左边孩子比右边孩子大的情况
+        for (int i = ratings.size() - 2; i >= 0; i--) {
+            if (ratings[i] > ratings[i + 1]) candy[i] = max(candy[i], candy[i + 1] + 1);
+            
+        }
+
+        int result = 0;
+        for (auto i : candy) {
+            result += i;
+        }
+
+        return result;
+    }
+};
+```
+
+### 柠檬水找零
+
+这道题较为无脑，主要在于模拟过程。题目中顾客给的钱只有5，10，20美元三种。一杯水5元，因此这里有三种情况：
+
++ 如果给了5元，直接收下。
++ 如果给了10元，找5元。
++ 如果给了20元，找15元，可以选择10+5，也可以选择5*3.
+
+前两种情况很固定，贪心的策略主要用在第三种情况，如果我们手里有10元和5元，那么优先找，如果没有10元，则找3张5元。因为10元只能给20元找钱，而5元还可以给10元找钱。我们按照三种情况进行讨论即可写出代码。
+
+下面是我写的代码，使用map存储三种情况
+
+```cpp
+class Solution {
+public:
+    bool lemonadeChange(vector<int>& bills) {
+        unordered_map<int, int> money_map;
+        for (int i = 0; i < bills.size(); i ++) {
+            if (bills[i] == 5) money_map[5] += 1;
+            else if (bills[i] == 10) {
+                money_map[10] += 1;
+                if (money_map[5] == 0) return false;
+                money_map[5] -= 1;
+            } else {
+                if (money_map[10] != 0 && money_map[5] != 0 )  {
+                    money_map[10] -= 1;
+                    money_map[5] -= 1;
+                } else if (money_map[5] >= 3) {
+                    money_map[5] -= 3;
+                } else return false;
+               
+            }
+        }
+        return true;
+    }
+};
+```
+
+代码随想录答案：
+
+```cpp
+class Solution {
+public:
+    bool lemonadeChange(vector<int>& bills) {
+        int five = 0, ten = 0, twenty = 0;
+        for (int bill : bills) {
+            // 情况一
+            if (bill == 5) five++;
+            // 情况二
+            if (bill == 10) {
+                if (five <= 0) return false;
+                ten++;
+                five--;
+            }
+            // 情况三
+            if (bill == 20) {
+                // 优先消耗10美元，因为5美元的找零用处更大，能多留着就多留着
+                if (five > 0 && ten > 0) {
+                    five--;
+                    ten--;
+                    twenty++; // 其实这行代码可以删了，因为记录20已经没有意义了，不会用20来找零
+                } else if (five >= 3) {
+                    five -= 3;
+                    twenty++; // 同理，这行代码也可以删了
+                } else return false;
+            }
+        }
+        return true;
+    }
+};
+```
+
+### [ 根据身高重建队列](https://leetcode.cn/problems/queue-reconstruction-by-height/)
+
+这道题是给我们一个二维的数组，每个元素的第一维是身高，第二维是前面比他高的人数(大于等于)。要我们对一个随机的数组进行排序。这道题的思路和前面分发糖果类似，不能同时考虑，要先考虑一边再考虑另一边，从局部最优推导到全局最优。
+
+思路：我们对二维数组按照身高进行排序，从高到低，排序后身高部分满足要求，但是人数还是乱序的。如：
+
+[[7,0],[4,4],[7,1],[5,0],[6,1],[5,2]]按照身高排序后：[[7,0], [7,1] [6,1], [5,0], [5,2], [4,4]]，
+
+第二步我们运用贪心的思路，再对人数进行排序，我们按照人数作为新数组的索引，插入到对应位置。
+
+[[5,0],[7,0],[5,2],[6,1],[4,4],[7,1]]
+
+注意在插入的过程中，因为前面已经按照身高进行了排序，因此插入的元素并不会改变原本的身高的排序规则。
+
+![406.根据身高重建队列](learning_leecode.assets/20201216201851982.png)
+
+插入的过程：
+
+- 插入[7,0]：[[7,0]]
+- 插入[7,1]：[[7,0],[7,1]]
+- 插入[6,1]：[[7,0],[6,1],[7,1]]
+- 插入[5,0]：[[5,0],[7,0],[6,1],[7,1]]
+- 插入[5,2]：[[5,0],[7,0],[5,2],[6,1],[7,1]]
+- 插入[4,4]：[[5,0],[7,0],[5,2],[6,1],[4,4],[7,1]]
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> reconstructQueue(vector<vector<int>>& people) {
+        vector<vector<int>> result;
+        auto cmp = [](vector<int>&a, vector<int>&b){
+            if (a[0] == b[0]) return a[1] < b[1];  //对于人数，按照从小到大排
+            return a[0] > b[0]; //对于身高，按照从大到小排
+            };
+
+        //先按身高进行排序，从高到低
+        sort(people.begin(), people.end(), cmp);
+
+        for (int i = 0; i < people.size(); i++) {
+                int pos = people[i][1];
+                result.insert(result.begin() + pos, people[i]);
+        }
+        return result;
+
+    }
+}
+```
+
+**还有个注意的点，就是在按照身高排序时，相同身高的人，要将人数大的放在后面，如第6行。**
+
+使用链表比数组更加节省计算资源：
+
+```cpp
+// 版本二
+class Solution {
+public:
+    // 身高从大到小排（身高相同k小的站前面）
+    static bool cmp(const vector<int>& a, const vector<int>& b) {
+        if (a[0] == b[0]) return a[1] < b[1];
+        return a[0] > b[0];
+    }
+    vector<vector<int>> reconstructQueue(vector<vector<int>>& people) {
+        sort (people.begin(), people.end(), cmp);
+        list<vector<int>> que; // list底层是链表实现，插入效率比vector高的多
+        for (int i = 0; i < people.size(); i++) {
+            int position = people[i][1]; // 插入到下标为position的位置
+            std::list<vector<int>>::iterator it = que.begin();
+            while (position--) { // 寻找在插入位置
+                it++;
+            }
+            que.insert(it, people[i]);
+        }
+        return vector<vector<int>>(que.begin(), que.end());
+    }
+};
+```
+
+### 用最少数量的箭射爆气球
+
+本题贪心的思路比较好想，但是代码相对较难想。我们需要用最少数量的箭射爆气球，那么贪心的策略就是尽可能的让气球堆叠一块，一箭射爆。
+
+那么最开始肯定需要对数组进行排序。这里面是否增加弓箭的策略需要分类讨论：
+
++ 如果当前气球的左边界与上一个气球的右边界不相邻，那么一定需要添加一箭。(这个相对好理解)
++ 排除上一种情况后，剩下的就是当前气球的左边界与上一个气球右边界相邻的情况了。**但是需要考虑的是需不需要把下一个气球也带上，一起射**。
+
+![452.用最少数量的箭引爆气球](learning_leecode.assets/20201123101929791.png)
+
+​	这里面考虑当前气球与上一个气球的最小右边界。如果当前最小有边界与下一个气球的左边界相邻，那么可以一箭射爆，如果不相邻，就需要再添加一只箭。
+
+```cpp
+class Solution {
+public:
+    int findMinArrowShots(vector<vector<int>>& points) {
+        int arrow_num = 1;
+        if (points.size() == 0) return 0;
+        auto cmp = [](vector<int>& a, vector<int>& b) {
+            if (a[0] == b[0]) return a[1] < b[1]; //短的在前
+            return a[0] < b[0];
+        };
+        sort(points.begin(), points.end(), cmp);
+
+        for (int i = 1; i < points.size();i++) {
+            //两个气球不重叠的情况
+            if (points[i][0] > points[i - 1][1]) { //气球左边界大于上一个气球的右边界，证明两个区间不重叠，需要加一个arrow
+                arrow_num++;
+            } else { //两气球一定重叠
+                points[i][1] = min(points[i][1], points[i - 1][1]);
+            }
+        }
+        return arrow_num;
+    }
+};
+```
+
+### [无重叠区间](https://leetcode.cn/problems/non-overlapping-intervals/)
+
+这题的思路和上一题一样，都是判断相邻两个区间是否重叠，关键是找两个区间的最小的右区间，然后和下一个区间进行比较，看看能否带上下一个区间。代码如下:
+
+```cpp
+class Solution {
+public:
+    int eraseOverlapIntervals(vector<vector<int>>& intervals) {
+        if (intervals.size() == 0) return 0;
+        int count = 0;
+
+        sort(intervals.begin(), intervals.end(), [](vector<int>& a, vector<int>&b){
+            if (a[0] == b[0]) return a[1] < b[1];
+            return a[0] < b[0];});
+
+        for (int i = 1; i < intervals.size(); i++) {
+            if (intervals[i][0] >= intervals[i - 1][1]){
+                continue;
+            } else {
+                intervals[i][1] = min(intervals[i][1], intervals[i - 1][1]);
+                count++;
+            }
+        }
+        return count;
+    }
+};
+```
+
+### 划分字母区间
+
+这道题和前面的思路不太相同，比较有难度，题目给你一个字符串 `s` 。我们要把这个字符串划分为尽可能多的片段，同一字母最多出现在一个片段中。
+
+注意，划分结果需要满足：将所有划分结果按顺序连接，得到的字符串仍然是 `s` 。
+
+返回一个表示每个字符串片段的长度的列表。
+
+这道题最重要的两点：
+
++ 贪心思路：我们需要取遍历一遍字符串，统计每个字符出现的最远位置。方法是用一个数组hash，每个元素代表26个字母出现的最远位置，索引通过ASCII表示。每当这个字母再次出现时，覆盖掉相应位置。
++ 划分思路：我们需要设置一个flag用于统计当前所有遍历的字母最远的位置，当我们的索引值和这个最远位置重合的时候，结束划分，统计个数。
+
+![763.划分字母区间](learning_leecode.assets/20201222191924417.png)
+
+**需要注意，这里面需要维护的是当前已经遍历过的所有字母中的最远出现位置。当索引已经指向最远位置，且当前也没有更远的位置对这个值更新，证明这个已经是片段的结尾了**
+
+```cpp
+class Solution {
+public:
+    vector<int> partitionLabels(string s) {
+        int hash[27] = {0};
+        vector<int> result;
+        for (int i = 0; i < s.size(); i++) {
+            hash[s[i] - 'a'] = i;
+        }
+        int count = 0;
+        int far = 0;
+        for (int i = 0; i < s.size(); i++) {
+            int max_pos = hash[s[i] - 'a']; //当前所遍历字母的最远距离
+            far = max(far, max_pos);
+
+            if (i == far) {
+                result.emplace_back(count + 1);
+                count = 0;
+            }
+            else {
+                count++;
+            }
+        }
+        return result;
+
+    }
+};
+```
+
+随想录代码：
+
+```cpp
+class Solution {
+public:
+    vector<int> partitionLabels(string S) {
+        int hash[27] = {0}; // i为字符，hash[i]为字符出现的最后位置
+        for (int i = 0; i < S.size(); i++) { // 统计每一个字符最后出现的位置
+            hash[S[i] - 'a'] = i;
+        }
+        vector<int> result;
+        int left = 0;
+        int right = 0;
+        for (int i = 0; i < S.size(); i++) {
+            right = max(right, hash[S[i] - 'a']); // 找到字符出现的最远边界
+            if (i == right) {
+                result.push_back(right - left + 1);
+                left = i + 1;
+            }
+        }
+        return result;
+    }
+};
+```
+
+### 合并区间
+
+这道题和前面的思路类似，但是实现细节上不同。前面的题目只需要我们进行统计，而这道题需要我们去算出合并后的结果并返回，稍微复杂一些。但核心的思想还是不变，我们判断当前区间和上一个区间是否有重叠，然后更新区间。同时我们还需要判断是否有多个重叠区间，也就是是否还要带上下一个区间。
+
+如果按照前面的代码思路，会出现问题。前面的代码核心思路如下：
+
+```cpp
+for (int i = 1; i < intervals.size(); i++) {
+    if (intervals[i][0] >= intervals[i - 1][1]){
+    	continue;
+    } else {
+    	intervals[i][1] = min(intervals[i][1], intervals[i - 1][1]);
+    count++;
+    }
+}
+```
+
+我们按照这个思路大体写出本题代码。
+
+```cpp
+vector<vector<int>> result;
+for (int i = 1; i < intervals.size(); i++) {
+    vector<int> tmp_buf;
+    if (intervals[i][0] >= intervals[i - 1][1]){ //当前区间与前面的一个不重叠
+    	tmp_buf.push_back(intervals[i - 1][0]);
+        tmp_buf.push_back(intervals[i - 1][1]);
+    } else {
+      intervals[i][0] = min(intervals[i][0], intervals[i - 1][0]);//更新最小左区间，相当于合并操作    
+    }
+}
+```
+
+但是我们会发现，如果满足了重叠的条件后，我们不好去将更新完的区间添加到我们的新的vector中。因为我们会遇到很多种错误的情况，并且在for循环中我们是从1开始计数的，这意味着当所有区间都不重叠时，会漏掉第一个区间。
+
+正确的做法是我们先对数组排序，然后直接将第一个元素加到结果的数组中。  在for循环的过程中，我们时刻对比的是当前是否需要将result的右边界扩增，如果不需要，直接加入。
+
+![56.合并区间](learning_leecode.assets/20201223200632791.png)
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> merge(vector<vector<int>>& intervals) {
+        vector<vector<int>> result;
+        if (intervals.size() == 1) return intervals;
+        sort(intervals.begin(), intervals.end());
+        //把第一个元素先塞进去
+        result.push_back(intervals[0]);
+        for (int i = 1; i < intervals.size(); i++) {
+            if (intervals[i][0] <= result.back()[1]) {
+                result.back()[1] = max (intervals[i][1], result.back()[1]);
+            } else result.push_back(intervals[i]);
+        }
+        return result;
+    }
+};
+```
+
+### [单调递增的数字](https://leetcode.cn/problems/monotone-increasing-digits/)
+
+这道题设计上是比较巧妙的。容易让人搞错的是遍历的顺序，到底用从后往前遍历还是从前往后遍历比较好。
+
+直观的想法是从前往后遍历。但是这样就不能利用之前得到的计算结果。
+
+比如数字332，首先比较3和3，相等，符合条件。再比较第二个3和2，不是单调递增，3-1=2，2变成9，所以结果为329，错误的答案。
+
+如果使用从后往前遍历的顺序，那么首先比较3和2，不是单调增，3-1=2，2变成9，然后比较第一个3和第二位的2，不是单调增，3-1=2，2再变成9，所以结果为299，符合题意。
+
+另一个问题是题目给的是int类型的数，但是实际上我们需要根据每一位进行操作，因此需要先转换为字符串。
+
+```cpp
+class Solution {
+public:
+    int monotoneIncreasingDigits(int n) {
+        string n_s = to_string(n); //为了便于对数字的每一位进行操作
+        int flag =  n_s.size();
+        for (int i = n_s.size() - 1; i > 0 ; i--) {
+            if (n_s[i - 1] > n_s[i]) {
+                flag = i;
+                n_s[i - 1] --;
+            }
+        }
+        for (int i = flag; i < n_s.size(); i++) {
+            n_s[i] = '9';
+        }   
+        int result = stoi(n_s);
+        return result;
+    }
+};
+```
+
+这道题还有一个容易出错的地方，就是对于flag的意义。很多时候按照上面的思路，比较直观的可能会把代码写成这样的形式：
+
+```cpp
+class Solution {
+public:
+    int monotoneIncreasingDigits(int n) {
+        string n_s = to_string(n); //为了便于对数字的每一位进行操作
+        for (int i = n_s.size() - 1; i > 0 ; i--) {
+            if (n_s[i - 1] > n_s[i]) {
+                n_s[i - 1] --;
+                n_s[i] = '9';
+            }
+        }
+        int result = stoi(n_s);
+        return result;
+    }
+};
+```
+
+也就是说，我们从后往前比较后直接将后一位数字赋值为9。但是这样是有问题的。比如数字100。最开始比较0和0，满足条件，不做修改，但是后面比到1和0时，变成了0和9，但是个位还是零，结果变成了90。这明显错误，应该是我们赋值为9的后面所有位都赋值为9才为正确。因此我们需要一个flag记录。
+
+### [监控二叉树](https://leetcode.cn/problems/binary-tree-cameras/)
+
+这道题是二叉树和贪心算法的结合，但是实际上捋清楚思路后并没有那么困难。首先需要确定的是，我们需要根据左右子孩子的状态判断父节点的状态。总共分为三个状态：
+
++ 左右子孩子都被覆盖，父节点为未覆盖
++ 左右子孩子至少有一个被覆盖，父节点为安装摄像头
++ 左右子孩子至少有一个安装摄像头，父节点为覆盖状态
+
+通过递归遍历二叉树，使用后序遍历法，也就是左右中的顺序。然后根据左右子孩子的状态返回父节点的状态。**需要注意的是，如果根节点为空，直接添加一个相机，否则根节点不能被覆盖。**
+
+![968.监控二叉树3](learning_leecode.assets/20201229203742446.png)
+
+
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int result = 0;
+    enum NodeType {
+        uncover,
+        set_mointor,
+        cover,
+        err
+        
+    };
+    int minCameraCover(TreeNode* root) {
+        NodeType root_type = BackFind(root);
+        if (root_type == uncover) result++;
+        return result;
+    }
+
+    NodeType BackFind(TreeNode* node) {
+        if (node == nullptr) return cover;
+
+        NodeType left = BackFind(node->left);
+        NodeType right = BackFind(node->right);
+        //1.左右孩子全被覆盖，父节点为无覆盖状态
+        //2.左右孩子至少有一个是未覆盖状态，父节点安装摄像头
+        //3.左右孩子至少有一个有摄像头，父节点被覆盖
+        //4.当根节点是未覆盖状态，增加一个摄像头
+        if (left == cover && right == cover) return uncover;
+        else if (left == uncover || right == uncover) {
+            result++;
+            return set_mointor;
+        }
+        else if (left == set_mointor || right == set_mointor) return cover;
+        else return err;
+    }
+};
+```
+
+## 动态规划
+
+基础理论：
+
+动态规划中每一个状态一定是由上一个状态推导出来的，**这一点就区分于贪心**，贪心没有状态推导，而是从局部直接选最优的。
+
++ 动态规划的解题步骤：五部曲
+
+1. 确定dp数组（dp table）以及下标的含义
+2. 确定递推公式
+3. dp数组如何初始化
+4. 确定遍历顺序
+5. 举例推导dp数组
+
+为什么要先确定递推公式，然后在考虑初始化呢？
+
+因为一些情况是**递推公式决定了dp数组要如何初始化**！
+
+### 斐波那契数列
+
+这道题就算不会动态规划也可以写出来，但是我认为简单题就是用来对方法论进行深度理解的，所以仍然用五部法进行分析：
+
+1. 确定dp数组以及下标的含义
+
+dp[i]的定义为：第i个数的斐波那契数值是dp[i]
+
+2. 确定递推公式
+
+为什么这是一道非常简单的入门题目呢？
+
+**因为题目已经把递推公式直接给我们了：状态转移方程 dp[i] = dp[i - 1] + dp[i - 2];**
+
+3. dp数组如何初始化
+
+**题目中把如何初始化也直接给我们了，如下：**
+
+```cc
+dp[0] = 0;
+dp[1] = 1;
+```
+
+4. 确定遍历顺序
+
+从递归公式dp[i] = dp[i - 1] + dp[i - 2];中可以看出，dp[i]是依赖 dp[i - 1] 和 dp[i - 2]，那么遍历的顺序一定是从前到后遍历的
+
+5. 举例推导dp数组
+
+按照这个递推公式dp[i] = dp[i - 1] + dp[i - 2]，我们来推导一下，当N为10的时候，dp数组应该是如下的数列：
+
+0 1 1 2 3 5 8 13 21 34 55
+
+如果代码写出来，发现结果不对，就把dp数组打印出来看看和我们推导的数列是不是一致的。
+
+```cpp
+class Solution {
+public:
+    int fib(int n) {
+        if (n < 2) return n;
+        vector<int> dp(n + 1);
+        dp[0] = 0;
+        dp[1] = 1;
+        for (int i = 2; i <= n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2];
+        }
+        return dp[n];
+    }
+};
+```
+
+也可以使用递归求解：
+
+```cpp
+class Solution {
+public:
+    int fib(int N) {
+        if (N < 2) return N;
+        return fib(N - 1) + fib(N - 2);
+    }
+};
+```
+
+### 爬楼梯
+
+这道题分析后发现其实就是斐波那契数列，不过第一个元素不为0，为1。
+
+虽然代码相似，但我们仍然用五部曲进行分析。
+
+1. dp[i] 表示i阶楼梯有dp[i]种方法到达。
+2. 确定递推公式。我们从头开始思考，假如i=1，那么只有一种方法,dp[1] = 1。i=2，有两种方法，1+1 和2。当i=3时，就是在前两种方案的组合，也就是i=1的方案加i=2的方案。dp[3] = 1 + 2 = 3。当i=4，就是i=2和i=3的方案的和。dp[4] = 2 + 3 = 5。所以递推公式dp[i] = dp[i - 1] + dp[i - 2]。由于题目说了n>0，所以不需要考虑dp[0]到底等于几，直接从1开始即可。
+3. 初始条件，如果i = 1, dp[i]=1,如果i=2，dp[i]=2
+4. 遍历顺序依然为从前到后
+5. 举例推导dp数组
+
+举例当n为5的时候，dp table（dp数组）应该是这样的
+
+![70.爬楼梯](learning_leecode.assets/20210105202546299.png)
+
+```cpp
+class Solution {
+public:
+    int climbStairs(int n) {
+        if (n < 2) return n;
+            vector<int> dp(n + 1);
+            dp[1] = 1;
+            dp[2] = 2;
+            for (int i = 3; i <= n; i++) {
+                dp[i] = dp[i - 1] + dp[i - 2];
+            }
+        return dp[n];
+    }
+};
+```
+
+### 使用最小花费爬楼梯
+
+1. 确定dp数组以及下标的含义
+
+使用动态规划，就要有一个数组来记录状态，本题只需要一个一维数组dp[i]就可以了。
+
+**dp[i]的定义：到达第i台阶所花费的最少体力为dp[i]**。
+
+**对于dp数组的定义，大家一定要清晰！**
+
+1. 确定递推公式
+
+**可以有两个途径得到dp[i]，一个是dp[i-1] 一个是dp[i-2]**。
+
+dp[i - 1] 跳到 dp[i] 需要花费 dp[i - 1] + cost[i - 1]。
+
+dp[i - 2] 跳到 dp[i] 需要花费 dp[i - 2] + cost[i - 2]。
+
+那么究竟是选从dp[i - 1]跳还是从dp[i - 2]跳呢？
+
+一定是选最小的，所以dp[i] = min(dp[i - 1] + cost[i - 1], dp[i - 2] + cost[i - 2]);
+
+1. dp数组如何初始化
+
+看一下递归公式，dp[i]由dp[i - 1]，dp[i - 2]推出，既然初始化所有的dp[i]是不可能的，那么只初始化dp[0]和dp[1]就够了，其他的最终都是dp[0]dp[1]推出。
+
+那么 dp[0] 应该是多少呢？ 根据dp数组的定义，到达第0台阶所花费的最小体力为dp[0]，那么有同学可能想，那dp[0] 应该是 cost[0]，例如 cost = [1, 100, 1, 1, 1, 100, 1, 1, 100, 1] 的话，dp[0] 就是 cost[0] 应该是1。
+
+1. 确定遍历顺序
+
+最后一步，递归公式有了，初始化有了，如何遍历呢？
+
+本题的遍历顺序其实比较简单，简单到很多同学都忽略了思考这一步直接就把代码写出来了。
+
+因为是模拟台阶，而且dp[i]由dp[i-1]dp[i-2]推出，所以是从前到后遍历cost数组就可以了。
+
+> **但是稍稍有点难度的动态规划，其遍历顺序并不容易确定下来**。 例如：01背包，都知道两个for循环，一个for遍历物品嵌套一个for遍历背包容量，那么为什么不是一个for遍历背包容量嵌套一个for遍历物品呢？ 以及在使用一维dp数组的时候遍历背包容量为什么要倒序呢？
+
+**这些都与遍历顺序息息相关。当然背包问题后续「代码随想录」都会重点讲解的！**
+
+1. 举例推导dp数组
+
+拿示例2：cost = [1, 100, 1, 1, 1, 100, 1, 1, 100, 1] ，来模拟一下dp数组的状态变化，如下：
+
+![img](learning_leecode.assets/20221026175104.png)
+
+我的代码：
+
+```cpp
+class Solution {
+public:
+    int minCostClimbingStairs(vector<int>& cost) {
+        vector<int> dp(cost.size() + 1); //dp[i] 表示到达i个台阶的最低花费
+        dp[0] = cost[0];
+        dp[1] = cost[1];
+        for (int i = 2; i <= cost.size(); i++) {
+            if (i != cost.size()) {
+                dp[i] = min(dp[i - 1], dp[i - 2]) + cost[i];
+            } else {
+                dp[i] = min(dp[i - 1], dp[i - 2]);
+            }
+        }
+        return dp.back();
+    }
+};
+```
+
+随想录：
+
+```cpp
+class Solution {
+public:
+    int minCostClimbingStairs(vector<int>& cost) {
+        vector<int> dp(cost.size() + 1);
+        dp[0] = 0; // 默认第一步都是不花费体力的
+        dp[1] = 0;
+        for (int i = 2; i <= cost.size(); i++) {
+            dp[i] = min(dp[i - 1] + cost[i - 1], dp[i - 2] + cost[i - 2]);
+        }
+        return dp[cost.size()];
+    }
+};
+```
+
+### 不同路径
+
+题目给我们一个网格图，让我们算出从左上角到右下角的所有路径的总和，已知机器人只能向右或向下运动，不可以向左和向上。**除了第一行和第一列之外，剩下的格子的总的不同路径都为它上面的格子的不同路径加上它左边的格子的不同路径。**也就是每一步都是上一步推导过来的，因此考虑动态规划。
+
+![img](learning_leecode.assets/20210110174033215.png)
+
+我们依然用五步法进行分析：
+
++ dp数组明显是二维数组，那么dp[i]表示第i个格子的不同路径的个数
++ 递推式：dp[i]\[j]=dp[i - 1]\[j] + dp[i]\[j - 1]
++ 初始化：因为我们只能向右和下走，因此第一行和第一列的路径只有一条。dp[0]\[i]和dp[j]\[0]全为1，剩下的格子全为0。**这里需要清楚二维vector的初始化方法**
++ 遍历顺序：由于机器人从左上角走到右下角，因此明显是从前往后遍历数组。
++ 举例推导dp数组
+
+![62.不同路径1](learning_leecode.assets/20201209113631392.png)
+
+我的代码：
+
+```cpp
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        vector<vector<int>> dp(m, vector<int>(n)); //构造dp数组
+        //初始化
+        for (int i = 0; i < m; i++) dp[i][0] = 1;
+        for (int i = 0; i < n; i++) dp[0][i] = 1;
+
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
+            }
+        }
+        return dp[m - 1][n - 1];
+    }
+};
+```
+
+### 不同路径II
+
+这道题和上一题的区别在于，本题中给的是一个二维数组，由0和1组成，其中为1的格子表示有障碍物，不能通过。
+
+那么依然考虑五步法，那么其实dp数组的含义，递推公式，遍历顺序都是相同的，只有初始化不同。
+
+那么假设障碍物在第一行或第一列的某处，那么其实它后面的行或列只能被初始化为0，因为机器人只能往右或往下移动。
+
+![63.不同路径II](learning_leecode.assets/20210104114513928.png)
+
+因此代码可以这样写，**注意如何根据一个已知的二维vector初始化二维dp数组**
+
+```cpp
+class Solution {
+public:
+    int uniquePathsWithObstacles(vector<vector<int>>& obstacleGrid) {
+        if (obstacleGrid[0][0] == 1 || obstacleGrid.back().back() == 1) return 0;
+        int rows = obstacleGrid.size();
+        int cols = obstacleGrid[0].size();
+        vector<vector<int>> dp(rows, vector<int>(cols));
+
+        for (int i = 0; i < rows && obstacleGrid[i][0] == 0; i++) dp[i][0] = 1;
+        for (int i = 0; i < cols && obstacleGrid[0][i] == 0; i++) dp[0][i] = 1;
+
+        for (int i = 1; i < rows; i++) {
+            for (int j = 1; j < cols; j++) {
+                if (obstacleGrid[i][j] == 0) dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
+            }
+        }
+        
+        return dp[rows - 1][cols - 1];
+        
+
+    }
+};
+```
+
+### 整数拆分
+
+我们用动态规划五步法进行分析。
+
++ dp[i]:第i个正整数拆分后乘积的最大值。
++ 递推公式：对于某个正整数$i$，可以拆分成$j$和$(i-j)$，其中$j$为从1-i，那么乘积就是$j×(i-j)$，但是$i-j$也可以继续拆分。比如5-> 1+4->1+1+3->...，那么我们需要比较的是$j×(i-j)$的值与$(i-j)$拆分后的最大值。也就是$max(j×(i-j), j×dp[i-j])$，同时，还要比较当前值与拆分的值的大小。$max(d[i], max(j×(i-j), j×dp[i-j]))$
++ 初始化：题目要求n>=2，所以dp[2]=1
++ 遍历顺序：从小到大遍历
++ 打印dp数组：
+
+![343.整数拆分](learning_leecode.assets/20210104173021581.png)
+
+**那有同学问了，j怎么就不拆分呢？**
+
+j是从1开始遍历，拆分j的情况，在遍历j的过程中其实都计算过了。那么从1遍历j，比较(i - j) * j和dp[i - j] * j 取最大的。递推公式：dp[i] = max(dp[i], max((i - j) * j, dp[i - j] * j));
+
+也可以这么理解，j * (i - j) 是单纯的把整数拆分为两个数相乘，而j * dp[i - j]是拆分成两个以及两个以上的个数相乘。
+
+如果定义dp[i - j] * dp[j] 也是默认将一个数强制拆成4份以及4份以上了。
+
+所以递推公式：dp[i] = max({dp[i], (i - j) * j, dp[i - j] * j});
+
+那么在取最大值的时候，为什么还要比较dp[i]呢？
+
+因为在递推公式推导的过程中，每次计算dp[i]，取最大的而已。
+
+```cpp
+class Solution {
+public:
+    int integerBreak(int n) {
+        vector<int> dp(n + 1); //dp[i]的含义为i的最大乘积
+        dp[2] = 1;  
+        for (int i = 3; i <= n; i++) {
+            for (int j = 1; j <= i / 2; j++) {
+                // dp[i] = max(max(j * (i - j), j * dp[i - j]), dp[i]);
+                dp[i] = max(dp[i], max(j * (i - j), j * dp[i - j]));
+            }
+        }
+        return dp[n];
+    }
+};
+```
+
+### 不同的二叉搜索树
+
+其实这道题只是用到了二叉搜索树的性质，本身和二叉搜索树没有太大关系。题目是想让我们得出n个节点组成的二叉搜索树有多少种。其实就是从小到大的一个递推进行累加，我们按照五步法进行思考。
+
++ dp[i]：i这个正整数有dp[i]个互不相同的二叉搜索树
++ 递推公式：我们从小的数字开始思考，如果只有一个节点或没有节点，那只有一种情况。如果有两个节点，那有两种排列情况。
+
+![96.不同的二叉搜索树](learning_leecode.assets/20210107093106367.png)
+
+如果n为3，就有五种情况
+
+![96.不同的二叉搜索树1](learning_leecode.assets/20210107093129889.png)
+
+其实我们可以发现里面的规律：n为节点的个数，j为根节点数字，那么按照二叉搜索树的性质，j左边一定是比j小的，所以有dp[j-1]种，右边是剩下的节点排列得到的，dp[i - j]，那么i是什么呢？，$i\in [2,n]$。我们看n=3的情况，根节点为1的下面有两种情况，其实和n=2的情况是一样的，所以我们进行从小到大的递推即可，当前的最优二叉树的个数为左右情况的乘积：dp[i] = dp[j - 1] * dp[i - j]，并且i需要从小累计加到n，所以最终的递推公式：dp[i] += dp[j - 1] * dp[i - j]
+
+![96.不同的二叉搜索树2](learning_leecode.assets/20210107093226241.png)
+
++ 初始化：易得dp[0]=dp[1]=1
++ 遍历顺序，从小到大。
+
+```cpp
+class Solution {
+public:
+    int numTrees(int n) {
+        vector<int> dp(n + 1); //dp[i]表示整数i的二叉搜索树的个数为dp[i]
+    
+        dp[0] = 1;
+        dp[1] = 1;
+        for (int i = 2; i <= n; i++) {
+            for (int j = 1; j <= i; j++) {
+                dp[i] += dp[j - 1] * dp[i - j];
+            }
+        }
+        return dp[n];
+    }
+};
+```
+
+###  0-1背包问题(重点，难点)
+
+0-1背包基本概念：
+
+有n件物品和一个最多能背重量为w 的背包。第i件物品的重量是weight[i]，得到的价值是value[i] 。**每件物品只能用一次**，求解将哪些物品装入背包里物品价值总和最大。
+
+求解0-1背包基本上dp数组有两种形式：二维dp数组和一维dp数组。二维dp数组更好理解，但是相对来说耗时更长，占的内存更大。
+
+**二维dp数组方法：**
+
++ dp[i]\[j]:即**dp[i]\[j] 表示从下标为[0-i]的物品里任意取，放进容量为j的背包，价值总和最大是多少**。
+
+![动态规划-背包问题1](learning_leecode.assets/20210110103003361.png)
+
++ 状态转移方程：
+
+dp[i]\[j]=max(dp[i-1]\[j], dp[i-1]\[j-weight(i)] +value(i));
+
+含义：分为两块
+
+**不放物品i**：由dp[i - 1]\[j]推出，即背包容量为j，里面不放物品i的最大价值，此时dp[i]\[j]就是dp[i - 1]\[j]。(其实就是当物品i的重量大于背包j的重量时，物品i无法放进背包中，所以背包内的价值依然和前面相同。)
+
+**放物品i**：由dp[i - 1]\[j - weight[i]]推出，dp[i - 1]\[j - weight[i]] 为背包容量为j - weight[i]的时候不放物品i的最大价值，那么dp[i - 1]\[j - weight[i]] + value[i] （物品i的价值），就是背包放物品i得到的最大价值
+
++ 初始化：已知当前的状态由上一行的状态已经左上角的状态推出，那么我们需要初始化第一行和第一列。第一列很容易，全部为0，而第一行，当物品0重量小于j时，初始化为物品0的价值，否则初始化为0.
++ 遍历顺序： 由于是二维的dp数组，那么先遍历物品还是先遍历背包容量都是OK的。
+
+代码示例：
+
+```cpp
+//二维dp数组实现
+#include <bits/stdc++.h>
+using namespace std;
+
+int n, bagweight;// bagweight代表行李箱空间
+void solve() {
+    vector<int> weight(n, 0); // 存储每件物品所占空间
+    vector<int> value(n, 0);  // 存储每件物品价值
+    for(int i = 0; i < n; ++i) {
+        cin >> weight[i];
+    }
+    for(int j = 0; j < n; ++j) {
+        cin >> value[j];
+    }
+    // dp数组, dp[i][j]代表行李箱空间为j的情况下,从下标为[0, i]的物品里面任意取,能达到的最大价值
+    vector<vector<int>> dp(weight.size(), vector<int>(bagweight + 1, 0));
+
+    // 初始化, 因为需要用到dp[i - 1]的值
+    // j < weight[0]已在上方被初始化为0
+    // j >= weight[0]的值就初始化为value[0]
+    for (int j = weight[0]; j <= bagweight; j++) {
+        dp[0][j] = value[0];
+    }
+
+    for(int i = 1; i < weight.size(); i++) { // 遍历科研物品
+        for(int j = 0; j <= bagweight; j++) { // 遍历行李箱容量
+            // 如果装不下这个物品,那么就继承dp[i - 1][j]的值
+            if (j < weight[i]) dp[i][j] = dp[i - 1][j];
+            // 如果能装下,就将值更新为 不装这个物品的最大值 和 装这个物品的最大值 中的 最大值
+            // 装这个物品的最大值由容量为j - weight[i]的包任意放入序号为[0, i - 1]的最大值 + 该物品的价值构成
+            else dp[i][j] = max(dp[i - 1][j], dp[i - 1][j - weight[i]] + value[i]);
+        }
+    }
+    cout << dp[weight.size() - 1][bagweight] << endl;
+}
+
+int main() {
+    while(cin >> n >> bagweight) {
+        solve();
+    }
+    return 0;
+}
+
+```
+
+**一维数组方法：（滚动数组）**
+
+对于背包问题其实状态都是可以压缩的。
+
+在使用二维数组的时候，递推公式：dp[i][j] = max(dp[i - 1]\[j], dp[i - 1]\[j - weight[i]] + value[i]);
+
+**其实可以发现如果把dp[i - 1]那一层拷贝到dp[i]上，表达式完全可以是：dp[i]\[j] = max(dp[i]\[j], dp[i]\[j - weight[i]] + value[i]);**
+
+**与其把dp[i - 1]这一层拷贝到dp[i]上，不如只用一个一维数组了**，只用dp[j]（一维数组，也可以理解是一个滚动数组）。
+
+这就是滚动数组的由来，需要满足的条件是上一层可以重复利用，直接拷贝到当前层。
+
+读到这里估计大家都忘了 dp[i][j]里的i和j表达的是什么了，i是物品，j是背包容量。
+
+还是用之前的做题方法：
+
++ dp[j]:容量为j的背包，所背的物品价值可以最大为dp[j]。
+
++ 一维dp数组的递推公式：dp[j] = max(dp[j], dp[j - weight[i]] + value[i]);
+
++ 初始化：全部初始化为0即可
+
++ 遍历顺序：二维dp遍历的时候，背包容量是从小到大，而一维dp遍历的时候，背包是从大到小。
+
+  **倒序遍历是为了保证物品i只被放入一次！**。但如果一旦正序遍历了，那么物品0就会被重复加入多次！
+
+  举一个例子：物品0的重量weight[0] = 1，价值value[0] = 15
+
+  如果正序遍历
+
+  dp[1] = dp[1 - weight[0]] + value[0] = 15
+
+  dp[2] = dp[2 - weight[0]] + value[0] = 30
+
+  此时dp[2]就已经是30了，意味着物品0，被放入了两次，所以不能正序遍历。
+
+  为什么倒序遍历，就可以保证物品只放入一次呢？
+
+  倒序就是先算dp[2]
+
+  dp[2] = dp[2 - weight[0]] + value[0] = 15 （dp数组已经都初始化为0）
+
+  dp[1] = dp[1 - weight[0]] + value[0] = 15
+
+  所以从后往前循环，每次取得状态不会和之前取得状态重合，这样每种物品就只取一次了。
+
+![动态规划-背包问题9](learning_leecode.assets/20210110103614769.png)
+
+```cpp
+// 一维dp数组实现
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    // 读取 M 和 N
+    int M, N;
+    cin >> M >> N;
+
+    vector<int> costs(M);
+    vector<int> values(M);
+
+    for (int i = 0; i < M; i++) {
+        cin >> costs[i];
+    }
+    for (int j = 0; j < M; j++) {
+        cin >> values[j];
+    }
+
+    // 创建一个动态规划数组dp，初始值为0
+    vector<int> dp(N + 1, 0);
+
+    // 外层循环遍历每个类型的研究材料
+    for (int i = 0; i < M; ++i) {
+        // 内层循环从 N 空间逐渐减少到当前研究材料所占空间
+        for (int j = N; j >= costs[i]; --j) {
+            // 考虑当前研究材料选择和不选择的情况，选择最大值
+            dp[j] = max(dp[j], dp[j - costs[i]] + values[i]);
+        }
+    }
+
+    // 输出dp[N]，即在给定 N 行李空间可以携带的研究材料最大价值
+    cout << dp[N] << endl;
+
+    return 0;
+}
+```
+
+### 分割等和子集
+
+这道题连着下面一道题的思路都是类似的。这道题给我们一些正整数数组，问是否可以将这个数组分割成两个子集，使得两个子集的元素和相等。
+
+这类题的难点是我们如何转化成0-1背包问题，然后利用0-1背包的方法进行求解。
+
+**重点思路：**一个数组分成两个子集，且子集的元素和相等。**那么其实就要们找出数组中能否凑成sum/2**，如果可以，返回true，不行返回false。注意：
+
+- 背包的体积为sum / 2
+- 背包要放入的商品（集合里的元素）重量为 元素的数值，价值也为元素的数值
+- 背包如果正好装满，说明找到了总和为 sum / 2 的子集。
+- 背包中每一个元素是不可重复放入。
+
+1. **确定dp数组以及下标的含义**
+
+01背包中，dp[j] 表示： 容量为j的背包，所背的物品价值最大可以为dp[j]。
+
+本题中每一个元素的数值既是重量，也是价值。
+
+**套到本题，dp[j]表示 背包总容量（所能装的总重量）是j，放进物品后，背的最大重量为dp[j]**。
+
+那么如果背包容量为target， dp[target]就是装满 背包之后的重量，所以 当 dp[target] == target 的时候，背包就装满了。
+
+2.递推公式：
+
+与前面的0-1背包非常类似。只不过本题中重量也是价值。
+
+3.初始化：全零
+
+4.遍历顺序：与一维dp顺序一样
+
+
+
+![416.分割等和子集2](learning_leecode.assets/20210110104240545.png)
+
+```cpp
+class Solution {
+public:
+    bool canPartition(vector<int>& nums) {
+        int sum = 0;
+
+        // dp[i]中的i表示背包内总和
+        // 题目中说：每个数组中的元素不会超过 100，数组的大小不会超过 200
+        // 总和不会大于20000，背包最大只需要其中一半，所以10001大小就可以了
+        vector<int> dp(10001, 0);
+        for (int i = 0; i < nums.size(); i++) {
+            sum += nums[i];
+        }
+        // 也可以使用库函数一步求和
+        // int sum = accumulate(nums.begin(), nums.end(), 0);
+        if (sum % 2 == 1) return false;
+        int target = sum / 2;
+
+        // 开始 01背包
+        for(int i = 0; i < nums.size(); i++) {
+            for(int j = target; j >= nums[i]; j--) { // 每一个元素一定是不可重复放入，所以从大到小遍历
+                dp[j] = max(dp[j], dp[j - nums[i]] + nums[i]);
+            }
+        }
+        // 集合中的元素正好可以凑成总和target
+        if (dp[target] == target) return true;
+        return false;
+    }
+};
+```
+
+### 最后一块石头的重量II
+
+这题和上一题类似，代码也几乎一样。
+
+本题其实就是尽量让石头分成重量相同的两堆，相撞之后剩下的石头最小，**这样就化解成01背包问题了**。
+
+1. 确定dp数组以及下标的含义
+
+**dp[j]表示容量（这里说容量更形象，其实就是重量）为j的背包，最多可以背最大重量为dp[j]**。
+
+可以回忆一下01背包中，dp[j]的含义，容量为j的背包，最多可以装的价值为 dp[j]。
+
+2.递推公式，初始化以及遍历顺序和上一题相同，直接给出代码：
+
+```cpp
+class Solution {
+public:
+    int lastStoneWeightII(vector<int>& stones) {
+        vector<int> dp(15001, 0);
+        int sum = 0;
+        for (int i = 0; i < stones.size(); i++) sum += stones[i];
+        int target = sum / 2;
+        for (int i = 0; i < stones.size(); i++) { // 遍历物品
+            for (int j = target; j >= stones[i]; j--) { // 遍历背包
+                dp[j] = max(dp[j], dp[j - stones[i]] + stones[i]);
+            }
+        }
+        return sum - dp[target] - dp[target];
+    }
+};
+```
+
+### 目标和
+
+这一题和上面的思路就不同了，之前要求的都是装满背包的最大价值是多少，而本题变成了，装满容量为x的背包，有几种方法。这里的x，就是bagSize，也就是我们后面要求的背包容量。
+
+题目给我们一组正数以及一个target，问能有几种方法用数组中的组合出来target。
+
+既然为target，那么就一定有 left组合 - right组合 = target。
+
+left + right = sum，而sum是固定的。right = sum - left
+
+公式来了， left - (sum - left) = target 推导出 left = (target + sum)/2 。
+
+target是固定的，sum是固定的，left就可以求出来。
+
+此时问题就是在集合nums中找出和为left的组合。
+
+本题则是装满有几种方法。其实这就是一个组合问题了。
+
+1. 确定dp数组以及下标的含义
+
+dp[j] 表示：填满j（包括j）这么大容积的包，有dp[j]种方法
+
+1. 确定递推公式
+
+有哪些来源可以推出dp[j]呢？
+
+只要搞到nums[i]，凑成dp[j]就有dp[j - nums[i]] 种方法。
+
+例如：dp[j]，j 为5，
+
+- 已经有一个1（nums[i]） 的话，有 dp[4]种方法 凑成 容量为5的背包。
+- 已经有一个2（nums[i]） 的话，有 dp[3]种方法 凑成 容量为5的背包。
+- 已经有一个3（nums[i]） 的话，有 dp[2]种方法 凑成 容量为5的背包
+- 已经有一个4（nums[i]） 的话，有 dp[1]种方法 凑成 容量为5的背包
+- 已经有一个5 （nums[i]）的话，有 dp[0]种方法 凑成 容量为5的背包
+
+那么凑整dp[5]有多少方法呢，也就是把 所有的 dp[j - nums[i]] 累加起来。
+
+所以求组合类问题的公式，都是类似这种：
+
+```text
+dp[j] += dp[j - nums[i]]
+```
+
+**这个公式在后面在讲解背包解决排列组合问题的时候还会用到！**
+
+3.dp数组初始化：dp[0]=1
+
+4. 确定遍历顺序：和前面一样，nums放在外循环，target在内循环，且内循环倒序。
+
+![img](learning_leecode.assets/20210125120743274.jpg)
+
+```cpp
+class Solution {
+public:
+    int findTargetSumWays(vector<int>& nums, int S) {
+        int sum = 0;
+        for (int i = 0; i < nums.size(); i++) sum += nums[i];
+        if (abs(S) > sum) return 0; // 此时没有方案
+        if ((S + sum) % 2 == 1) return 0; // 此时没有方案
+        int bagSize = (S + sum) / 2;
+        vector<int> dp(bagSize + 1, 0);
+        dp[0] = 1;
+        for (int i = 0; i < nums.size(); i++) {
+            for (int j = bagSize; j >= nums[i]; j--) {
+                dp[j] += dp[j - nums[i]];
+            }
+        }
+        return dp[bagSize];
+    }
+};
+```
+
+### 1和0
+
+本题代码比较简单，但意思较难。会被认为是多重背包。
+
+![416.分割等和子集1](learning_leecode.assets/20210117171307407-20230310132423205.png)
+
+这道题的难点在于如何将题转化为0-1背包问题。其实相比于之前的题目，这道题是要我们往一个二维的背包中放物品，物品就是题目中数组的元素。二维背包的容量就是m和n，代表0和1个个数，而答案就是dp[m]\[n]的值，因此我们仍然用动规5步进行求解：
+
+1.dp[i]\[j]:表示最多有i个0和j个1的strs的最大子集的大小为dp[i]\[j]。
+
+2.递推公式：dp[i]\[j] 可以由前一个strs里的字符串推导出来，strs里的字符串有zeroNum个0，oneNum个1。
+
+dp[i]\[j] 就可以是 dp[i - zeroNum]\[j - oneNum] + 1。
+
+然后我们在遍历的过程中，取dp[i]\[j]的最大值。
+
+所以递推公式：dp[i]\[j] = max(dp[i]\[j], dp[i - zeroNum]\[j - oneNum] + 1);
+
+此时大家可以回想一下01背包的递推公式：dp[j] = max(dp[j], dp[j - weight[i]] + value[i]);
+
+对比一下就会发现，字符串的zeroNum和oneNum相当于物品的重量（weight[i]），字符串本身的个数相当于物品的价值（value[i]）。
+
+**这就是一个典型的01背包！** 只不过物品的重量有了两个维度而已。
+
+3.初始化:全为0
+
+4.遍历顺序：先遍历物品个数，再遍历背包容量，并且要保证背包容量的遍历要倒序进行！对于本题，由于是二维背包，所以要有两个for循环倒序。
+
+```cpp
+class Solution {
+public:
+    int findMaxForm(vector<string>& strs, int m, int n) {
+        vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));
+        
+        for (auto &str : strs) { //先遍历物品
+            int x = 0; int y = 0;
+            for (auto & c : str) {
+                if (c == '0') x++;
+                else y++;
+            }
+
+            for (int i = m; i >= x; i--) { //再遍历背包容量，但是这里容量时两个维度
+                for (int j = n; j >= y; j--) {
+                    dp[i][j] = max(dp[i][j], dp[i - x][j - y] + 1);
+                }
+            }
+        }
+
+        return dp[m][n];
+    }
+};
+```
+
+### 完全背包理论基础
+
+完全背包其实是在0-1背包的基础上拓展过来的，0-1背包要求我们每件物品只能取一次，而完全背包每件物品可以任意取。
+
+代码上的主要区别在**遍历顺序上**。
+
+0-1背包一维滚动数组法必须先遍历物品，再遍历背包容量，并且背包容量要倒序遍历，就是因为如果正序遍历会取物品多次。
+
+而完全背包因为本身就可以取物品多次，因此两重for循环中遍历都是正序遍历。
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// 先遍历背包，再遍历物品
+void test_CompletePack(vector<int> weight, vector<int> value, int bagWeight) {
+
+    vector<int> dp(bagWeight + 1, 0);
+
+    for(int j = 0; j <= bagWeight; j++) { // 遍历背包容量
+        for(int i = 0; i < weight.size(); i++) { // 遍历物品
+            if (j - weight[i] >= 0) dp[j] = max(dp[j], dp[j - weight[i]] + value[i]);
+        }
+    }
+    cout << dp[bagWeight] << endl;
+}
+int main() {
+    int N, V;
+    cin >> N >> V;
+    vector<int> weight;
+    vector<int> value;
+    for (int i = 0; i < N; i++) {
+        int w;
+        int v;
+        cin >> w >> v;
+        weight.push_back(w);
+        value.push_back(v);
+    }
+    test_CompletePack(weight, value, V);
+    return 0;
+}
+```
+
+对于纯完全背包问题，两重for循环的遍历顺序是可以颠倒的，而leecode上的一些题目则是完全背包的变种，因此并不能任意交换遍历顺序。
+
+### 零钱兑换II
+
+对于完全背包的应用类题目，主要分两种：
+
++ 一种是不强调结果集的顺序，比如(1,2,2)和(2,1,2)认为是一种情况，这种称为组合问题。
++ 另一种强调结果集的顺序，这种称为排列问题。
+
+这道题要我们求组合数，也就是凑成总金额j的货币的组合的数量。
+
+五步曲：
+
+1. dp[j]:凑成总金额j的货币组合数为dp[j]
+
+2. 确定递推公式
+
+dp[j] 就是所有的dp[j - coins[i]]（考虑coins[i]的情况）相加。
+
+所以递推公式：dp[j] += dp[j - coins[i]];
+
+3. 初始化，为了使递推顺利，必须让dp[0]=1
+4. 对于无序的组合问题，**我们必须先遍历物品再遍历背包容量**。
+
+因为纯完全背包求得装满背包的最大价值是多少，和凑成总和的元素有没有顺序没关系，即：有顺序也行，没有顺序也行！
+
+而本题要求凑成总和的组合数，元素之间明确要求没有顺序。
+
+所以纯完全背包是能凑成总和就行，不用管怎么凑的。
+
+本题是求凑出来的方案个数，且每个方案个数是为组合数。
+
+那么本题，两个for循环的先后顺序可就有说法了。
+
+我们先来看 外层for循环遍历物品（钱币），内层for遍历背包（金钱总额）的情况。
+
+代码如下：
+
+```cpp
+for (int i = 0; i < coins.size(); i++) { // 遍历物品
+    for (int j = coins[i]; j <= amount; j++) { // 遍历背包容量
+        dp[j] += dp[j - coins[i]];
+    }
+}
+```
+
+假设：coins[0] = 1，coins[1] = 5。
+
+那么就是先把1加入计算，然后再把5加入计算，得到的方法数量只有{1, 5}这种情况。而不会出现{5, 1}的情况。
+
+**所以这种遍历顺序中dp[j]里计算的是组合数！**
+
+如果把两个for交换顺序，代码如下：
+
+```cpp
+for (int j = 0; j <= amount; j++) { // 遍历背包容量
+    for (int i = 0; i < coins.size(); i++) { // 遍历物品
+        if (j - coins[i] >= 0) dp[j] += dp[j - coins[i]];
+    }
+}
+```
+
+背包容量的每一个值，都是经过 1 和 5 的计算，包含了{1, 5} 和 {5, 1}两种情况。
+
+**此时dp[j]里算出来的就是排列数！**
+
+![518.零钱兑换II](learning_leecode.assets/20210120181331461.jpg)
+
+分析后，不难写出代码，本题代码较为简短：
+
+```cpp
+class Solution {
+public:
+    int change(int amount, vector<int>& coins) {
+        vector<int> dp(amount + 1, 0);
+        dp[0] = 1;
+        for (int i = 0; i < coins.size(); i++) { // 遍历物品
+            for (int j = coins[i]; j <= amount; j++) { // 遍历背包
+                dp[j] += dp[j - coins[i]];
+            }
+        }
+        return dp[amount];
+    }
+};
+```
+
+### 组合总和IV
+
+本题就是上一题的延续，要我们求得是排列数！，也就是不同顺序的序列被视作不同的组合。
+
+本题的五部曲基本上和上一题相同，不同的是遍历的顺序：
+
+![377.组合总和Ⅳ](learning_leecode.assets/20230310000625.png)
+
+我们需要先遍历背包容量，再遍历物品：
+
+```cpp
+ for (int i = 0; i <= target; i++) { // 遍历背包
+            for (int j = 0; j < nums.size(); j++) { // 遍历物品
+```
+
+整体代码如下：
+
+```cpp
+class Solution {
+public:
+    int combinationSum4(vector<int>& nums, int target) {
+        vector<int> dp(target + 1, 0);
+        dp[0] = 1;
+        for (int i = 0; i <= target; i++) { // 遍历背包
+            for (int j = 0; j < nums.size(); j++) { // 遍历物品
+                if (i - nums[j] >= 0 && dp[i] < INT_MAX - dp[i - nums[j]]) {
+                    dp[i] += dp[i - nums[j]];
+                }
+            }
+        }
+        return dp[target];
+    }
+};
+```
+
+需要注意的是：不管是求排列还是组合，都是让我们求组成的方式，而不是传统背包问题所求的最大价值，因此递推公式都是dp[j]+=dp[j-nums[i]]这种的形式，本质上是从dp[0]到dp[target]的递推。
+
+### 爬楼梯进阶版
+
+进阶版的爬楼梯可以认为是完全背包问题，n个台阶可以认为是容量为n的背包，而每次可以爬m个台阶(1<=m<n)是每次放入的物品。
+
+五部曲：
+
+1. 确定dp数组以及下标的含义
+
+**dp[i]：爬到有i个台阶的楼顶，有dp[i]种方法**。
+
+2. 确定递推公式
+
+​	求装满背包有几种方法，递推公式一般都是dp[i] += dp[i - nums[j]];
+
+本题呢，dp[i]有几种来源，dp[i - 1]，dp[i - 2]，dp[i - 3] 等等，即：dp[i - j]
+
+那么递推公式为：dp[i] += dp[i - j]
+
+3. 初始化：dp[0]=1
+4. 遍历顺序：
+
+这题先上1个台阶再上2个台阶和先上2个台阶再上1个台阶是两种上法，因此属于排列问题。需要先遍历背包容量，再遍历物品：
+
+```
+#include <iostream>
+#include <vector>
+using namespace std;
+int main() {
+    int n, m;
+    while (cin >> n >> m) {
+        vector<int> dp(n + 1, 0);
+        dp[0] = 1;
+        for (int i = 1; i <= n; i++) { // 遍历背包
+            for (int j = 1; j <= m; j++) { // 遍历物品
+                if (i - j >= 0) dp[i] += dp[i - j];
+            }
+        }
+        cout << dp[n] << endl;
+    }
+}
 ```
 
